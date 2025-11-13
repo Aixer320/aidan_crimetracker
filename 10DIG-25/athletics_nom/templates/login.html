@@ -1,0 +1,35 @@
+<!-- templates/login.html -->
+{% extends 'base.html' %}
+{% block title %}Log In{% endblock %}
+{% block content %}
+
+<div class="w3-bar w3-blue w3-large w3-padding">
+    <a href="{{ url_for('index') }}" class="w3-bar-item w3-button w3-hover-light-blue">
+        <i class="fa fa-home"></i> Home
+    </a>
+    <a href="{{ url_for('register') }}" class="w3-bar-item w3-button w3-hover-light-blue">
+        <i class="fa fa-user-plus"></i> Register
+    </a>
+</div>
+
+<div class="w3-container w3-padding-32 w3-center">
+    <div class="w3-card w3-round-large w3-padding-32 w3-light-grey w3-animate-opacity" style="max-width:500px; margin:auto;">
+        <h2 class="w3-text-blue"><i class="fa fa-sign-in"></i> Log In</h2>
+        <form method="post" class="w3-container w3-margin-top">
+            <label><i class="fa fa-envelope"></i> Email</label>
+            <input class="w3-input w3-border w3-round-large w3-margin-bottom" name="email" type="email" required>
+
+            <label><i class="fa fa-lock"></i> Password</label>
+            <input class="w3-input w3-border w3-round-large w3-margin-bottom" name="password" type="password" required>
+
+            <button class="w3-button w3-green w3-round-large w3-large w3-margin-top" type="submit">
+                <i class="fa fa-sign-in"></i> Log In
+            </button>
+        </form>
+        <p class="w3-margin-top">Need an account? <a href="{{ url_for('register') }}">Register</a></p>
+        {% if error %}
+            <p style="color: red;">{{ error }}</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

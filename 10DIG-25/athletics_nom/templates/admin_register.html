@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Registration</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+        }
+        .main-green { background-color: #06402B !important; color: #fff !important; }
+        .accent-red { color: #C62828 !important; }
+        .btn-green {
+            background-color: #06402B !important;
+            color: #fff !important;
+            transition: background 0.2s;
+        }
+        .btn-green:hover {
+            background-color: #C62828 !important;
+            color: #fff !important;
+        }
+        .border-green { border-color: #06402B !important; }
+        .center-container {
+            min-height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .form-box {
+            background: #fff;
+            padding: 32px 24px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            width: 100%;
+            max-width: 400px;
+        }
+        .form-box input, .form-box select {
+            width: 100%;
+            margin-bottom: 16px;
+        }
+        .form-box label {
+            color: #06402B;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            display: block;
+            text-align: left;
+        }
+    </style>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const occupationSelect = document.getElementById('occupation');
+        const usernameInput = document.querySelector('input[name="username"]');
+        occupationSelect.addEventListener('change', function() {
+            if (this.value === 'head_of_sport') {
+                usernameInput.value = 'a.wookey';
+            } else {
+                usernameInput.value = '';
+            }
+        });
+    });
+    </script>
+</head>
+
+<body class="w3-light-grey">
+    <div class="w3-bar w3-large w3-padding main-green">
+        <span class="w3-bar-item w3-xlarge">
+            <i class="fa fa-user-plus accent-red"></i> Admin Registration
+        </span>
+        <a href="{{ url_for('index') }}" class="w3-bar-item w3-button btn-green w3-hover-red">
+            <i class="fa fa-home"></i> Home
+        </a>
+        <a href="{{ url_for('admin_login') }}" class="w3-bar-item w3-button btn-green w3-hover-red">
+            <i class="fa fa-sign-in-alt"></i> Login
+        </a>
+    </div>
+    <div class="center-container">
+        <div class="form-box">
+            <h2 style="color: #06402B; text-align: center;">
+                <i class="fa fa-user-plus accent-red"></i> Register as Admin
+            </h2>
+            <form method="post" action="{{ url_for('admin_register') }}">
+                <label for="occupation">
+                    <i class="fa fa-user-tie accent-red"></i> Select your occupation:
+                </label>
+                <select id="occupation" name="occupation" class="w3-select w3-border border-green" required>
+                    <option value="" disabled selected>Choose occupation</option>
+                    <option value="house_leader">House Leader</option>
+                    <option value="house_captain">House Captain</option>
+                    <option value="head_of_sport">Head of Sport</option>
+                    <option value="sport_captain">Sport Captain</option>
+                </select>
+                <label for="house" id="house-label" style="display:none;">
+    <i class="fa fa-home accent-red"></i> Select your house:
+</label>
+<select id="house" name="house" class="w3-select w3-border border-green" style="display:none;">
+    <option value="" disabled selected>Choose house</option>
+    <option value="Scudo">Scudo</option>
+    <option value="Boek">Boek</option>
+    <option value="Taja">Taja</option>
+    <option value="Mitre">Mitre</option>
+    <option value="Gladius">Gladius</option>
+</select>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const occupationSelect = document.getElementById('occupation');
+    const houseSelect = document.getElementById('house');
+    const houseLabel = document.getElementById('house-label');
+    occupationSelect.addEventListener('change', function() {
+        if (this.value === 'house_leader' || this.value === 'house_captain') {
+            houseSelect.style.display = '';
+            houseLabel.style.display = '';
+        } else {
+            houseSelect.style.display = 'none';
+            houseLabel.style.display = 'none';
+            houseSelect.value = '';
+        }
+    });
+});
+</script>
+                <label for="admin_code">
+                    <i class="fa fa-key accent-red"></i> Admin Code:
+                </label>
+                <input type="text" id="admin_code" name="admin_code" class="w3-input w3-border border-green" placeholder="Enter admin code">
+                <label for="username">
+                    <i class="fa fa-user accent-red"></i> Username:
+                </label>
+                <input type="text" id="username" name="username" class="w3-input w3-border border-green" placeholder="Format Example: a.wookey/29649" required>
+                <label for="password">
+                    <i class="fa fa-lock accent-red"></i> Password:
+                </label>
+                <input type="password" id="password" name="password" class="w3-input w3-border border-green" placeholder="Password" required>
+                <button type="submit" class="w3-button w3-round-large btn-green" style="width: 100%; margin-top: 8px;">
+                    <i class="fa fa-user-plus accent-red"></i> Register
+                </button>
+            </form>
+            <a href="{{ url_for('admin_login') }}" class="w3-button w3-round-large btn-green w3-hover-red" style="width: 100%; margin-top: 16px;">
+                <i class="fa fa-sign-in-alt accent-red"></i> Already registered? Login
+            </a>
+        </div>
+    </div>
+
+<script>
+    {% if error %}
+        alert("{{ error }}");
+    {% endif %}
+</script>
+</body>
+</html>

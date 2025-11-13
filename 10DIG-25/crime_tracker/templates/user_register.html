@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User Register - Crime Tracker</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+    <style>
+        .container { max-width: 480px; margin: 40px auto; }
+        .password-requirements { margin-top: 20px; padding: 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; }
+        .requirements-title { font-weight: 600; color: #1e40af; margin-bottom: 10px; }
+        .requirement-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px; color: #475569; }
+        .requirement-item::before { content: '✓'; color: #10b981; font-weight: bold; min-width: 16px; }
+    </style>
+</head>
+<body class="w3-light-grey">
+<div class="w3-container container">
+    <h2 class="w3-center">User Registration</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="w3-margin-bottom">
+            {% for category, message in messages %}
+                <div class="w3-panel {{ 'w3-green' if category == 'success' else 'w3-red' }}">
+                    <p>{{ message }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+
+    <form class="w3-card w3-white w3-padding" method="post" action="{{ url_for('user_register') }}">
+        <label class="w3-text-grey">Username</label>
+        <input class="w3-input w3-border w3-margin-bottom" type="text" name="username" placeholder="Enter username" required>
+
+        <label class="w3-text-grey">Password</label>
+        <input class="w3-input w3-border w3-margin-bottom" type="password" name="password" placeholder="Enter password" required>
+
+        <label class="w3-text-grey">Confirm Password</label>
+        <input class="w3-input w3-border w3-margin-bottom" type="password" name="confirm" placeholder="Confirm password" required>
+
+        <button class="w3-button w3-blue w3-round" type="submit" style="width:100%;">Register</button>
+
+        <div class="password-requirements">
+            <div class="requirements-title">Password Requirements:</div>
+            <div class="requirement-item">At least 8 characters long</div>
+            <div class="requirement-item">Contains at least one uppercase letter (A-Z)</div>
+            <div class="requirement-item">Contains at least one lowercase letter (a-z)</div>
+            <div class="requirement-item">Contains at least one number (0-9)</div>
+        </div>
+    </form>
+
+    <div class="w3-center w3-margin-top">
+        <a href="{{ url_for('index') }}" class="w3-small">Back to Home</a>
+    </div>
+</div>
+</body>
+</html>

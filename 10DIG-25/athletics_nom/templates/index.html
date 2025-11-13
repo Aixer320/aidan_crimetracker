@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block title %} Home Page {% endblock %}
+{% block content %}
+<style>
+    .background-img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        opacity: 0.25;
+        z-index: 0;
+    }
+    .main-content {
+        position: relative;
+        z-index: 1;
+    }
+</style>
+<img src="{{ url_for('static', filename='sps_athletics.png') }}" class="background-img" alt="Athletics Background"/>
+<div class="w3-container w3-center main-content" style="margin-top:40px;">
+    <img src="{{ url_for('static', filename='sps_logo.jpeg') }}" alt="St Paul's School Logo" style="height:180px;">
+    <h2>Welcome to the St Paul's School {{ year }} Athletics Carnival Nominations Page</h2>
+    <div style="margin-top:30px;">
+        <a href="/student_portal" class="w3-button w3-blue w3-large" style="margin-right: 15px;">Student Portal</a>
+        <a href="/admin_portal" class="w3-button w3-green w3-large">Admin Portal</a>
+    </div>
+</div>
+{% endblock %}
