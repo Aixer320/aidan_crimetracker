@@ -136,13 +136,13 @@
       <label style="display:block; margin-bottom:4px;"><input type="checkbox" id="toggle-real" checked> Real layer</label>
       <label style="display:block;"><input type="checkbox" id="toggle-user" checked> User layer</label>
     </div>
-    <div id="resolve-progress" style="margin-top:6px; font-size:11px; color:#374151; display:none;">Resolving suburbs: 0/0</div>
+    <div id="resolve-progress" style="margin-top:6px; font-size:11px; color:#374151; display:none;">Resolved: 0/0</div>
   </div>
   <!-- Map loading overlay -->
   <div id="map-loader">
     <div class="loader-box">
       <div class="spinner"></div>
-      <div id="map-loader-text" class="loader-text">Loading suburbs…</div>
+      <div id="map-loader-text" class="loader-text">Loading crimes…</div>
     </div>
   </div>
 </div>
@@ -191,8 +191,8 @@ const QLD = { minLat:-29.5, maxLat:-9.0, minLng:137.995, maxLng:154.0 };
 const NORMALIZE = s => (s||'').toLowerCase().replace(/\s+/g,' ').trim();
 function inQld(lat,lng){ return lat>=QLD.minLat && lat<=QLD.maxLat && lng>=QLD.minLng && lng<=QLD.maxLng; }
 
-// Loader helpers
-function showLoader(text){ const overlay=document.getElementById('map-loader'); if(!overlay) return; const t=document.getElementById('map-loader-text'); if(t){ t.textContent = text || 'Loading suburbs…'; } overlay.style.display='flex'; }
+// Loader helpers (used only during initial crimes load)
+function showLoader(text){ const overlay=document.getElementById('map-loader'); if(!overlay) return; const t=document.getElementById('map-loader-text'); if(t){ t.textContent = text || 'Loading crimes…'; } overlay.style.display='flex'; }
 function hideLoader(){ const overlay=document.getElementById('map-loader'); if(overlay){ overlay.style.display='none'; } }
 function setLoaderText(text){ const t=document.getElementById('map-loader-text'); if(t){ t.textContent = text; } }
 window.showLoader = showLoader; window.hideLoader = hideLoader; window.setLoaderText = setLoaderText;
@@ -275,6 +275,8 @@ function wktToGeoJSON(wkt){
 
 const SUBURB_POLY_CACHE = new Map();
 const POSTCODE_POLY_CACHE = new Map();
+// Track in-flight polygon fetches to avoid duplicates
+const POLY_FETCH_INFLIGHT = new Set();
 
 // Suburbs along Brisbane River where we shrink polygons more to avoid water
 const WATER_PRONE_SUBURBS = new Set([
@@ -526,20 +528,22 @@ function popupHtmlUser(r){
   return `<b>${r.crime_type||'Crime'}</b><br>${displaySuburb(r) || (r.address||'')}${derivePostcode(r)?` (Postcode: ${derivePostcode(r)})`:''}<br>${r.crime_time||''}<br><b>Submitted by:</b> ${r.submitted_by||'Unknown'}${commentLine}`;
 }
 
-// ================== SUBURB RESOLUTION QUEUE ==================
+// ================== SUBURB RESOLUTION STATE ==================
 // Store suburbs that have been resolved
 const resolvedSuburbs = {};
+// Track total resolved count (includes DB pre-resolved + newly resolved)
+let resolvedCount = 0;
 
 // Queue for automatic suburb resolution
 let resolutionQueue = [];
 let isResolving = false;
 let priorityResolveInProgress = false;
 
-// Update resolution progress display
-function updateResolveProgress(current, total){
+// Update resolution progress display (no loader; just a small counter)
+function updateResolveProgress(currentResolved, total){
   const elem = document.getElementById('resolve-progress');
   if(total > 0){
-    elem.textContent = `Resolving suburbs: ${current}/${total}`;
+    elem.textContent = `Resolved: ${currentResolved}/${total}`;
     elem.style.display = 'block';
   } else {
     elem.style.display = 'none';
@@ -605,121 +609,81 @@ async function resolveCrimeSuburb(crime, retryCount = 0){
   return null;
 }
 
-// Process the resolution queue
+// Process the resolution queue (no loader display here)
 async function processResolutionQueue(){
   if(isResolving || resolutionQueue.length === 0) return;
 
   isResolving = true;
-  const totalToResolve = resolutionQueue.length;
-  let resolved = 0;
-
-  // Show loader at start of resolution
-  showLoader(`Resolving suburbs… ${resolved}/${totalToResolve}`);
 
   while(resolutionQueue.length > 0){
-    // Check if a priority resolve is in progress, if so, pause the queue
     if(priorityResolveInProgress){
       await new Promise(resolve => setTimeout(resolve, 100));
       continue;
     }
 
     const crime = resolutionQueue.shift();
-    resolved++;
-    updateResolveProgress(resolved, totalToResolve);
-    setLoaderText(`Resolving suburbs… ${resolved}/${totalToResolve}`);
 
     // Skip if already resolved
     if(crime._resolvedSuburb) continue;
 
     const suburb = await resolveCrimeSuburb(crime);
     if(suburb){
+      // Update resolved counter and UI
+      resolvedCount = Math.min(resolvedCount + 1, ALL_REAL.length);
+      updateResolveProgress(resolvedCount, ALL_REAL.length);
       // Update any markers that reference this crime
       renderReal();
     }
 
-    // Respect Nominatim rate limit: 1 request per second (1200ms delay to be safe)
+    // Respect Nominatim rate limit
     await new Promise(resolve => setTimeout(resolve, 1200));
   }
 
   isResolving = false;
-  updateResolveProgress(0, 0);
-  hideLoader();
 }
 
-// Initialize the resolution queue (sorted by date, prioritizing current filter range)
+// Initialize the resolution queue (prioritize current filter range)
 function initializeResolutionQueue(){
-  // Clear existing queue
   resolutionQueue = [];
-
-  // Get all unresolved crimes
   const unresolvedCrimes = ALL_REAL.filter(crime => !crime._resolvedSuburb);
 
-  // Get current date range filter
   const range = document.getElementById('time-range').value;
-
-  // Separate crimes into two groups: in range and out of range
   const inRange = [];
   const outOfRange = [];
 
-  unresolvedCrimes.forEach(crime => {
-    if(dateMatches(crime)){
-      inRange.push(crime);
-    } else {
-      outOfRange.push(crime);
-    }
-  });
+  unresolvedCrimes.forEach(crime => { (dateMatches(crime) ? inRange : outOfRange).push(crime); });
 
-  // Sort each group by date (newest to oldest)
   const sortByDate = (a, b) => {
     const dateA = parseDateFlexible(a.iso_date || a.crime_time);
     const dateB = parseDateFlexible(b.iso_date || b.crime_time);
-
-    if(!dateA && !dateB) return 0;
-    if(!dateA) return 1;
-    if(!dateB) return -1;
-
-    return dateB.getTime() - dateA.getTime();
+    if(!dateA && !dateB) return 0; if(!dateA) return 1; if(!dateB) return -1; return dateB.getTime() - dateA.getTime();
   };
 
   inRange.sort(sortByDate);
   outOfRange.sort(sortByDate);
-
-  // Prioritize crimes in the current date range first, then others
   resolutionQueue = [...inRange, ...outOfRange];
 
-  console.log(`Resolution queue initialized: ${inRange.length} in range (priority), ${outOfRange.length} out of range`);
-
-  // Show loader if there are items to resolve
-  if(resolutionQueue.length > 0){
-    showLoader('Resolving suburbs…');
-  } else {
-    hideLoader();
-  }
-
-  // Start processing
+  // Start processing (no loader shown)
   processResolutionQueue();
 }
 
 // Priority resolve: called when user clicks a crime marker
 async function priorityResolveCrime(crime, marker){
   if(crime._resolvedSuburb) return;
-
-  // Set flag to pause the automatic queue
   priorityResolveInProgress = true;
-
-  // Resolve this crime immediately
   const suburb = await resolveCrimeSuburb(crime);
   if(suburb && marker){
+    // Update resolved counter and UI
+    resolvedCount = Math.min(resolvedCount + 1, ALL_REAL.length);
+    updateResolveProgress(resolvedCount, ALL_REAL.length);
     marker.setPopupContent(popupHtmlReal(crime));
   }
-
-  // Resume automatic queue
   priorityResolveInProgress = false;
 }
 
 // ================== RENDER FUNCTIONS ==================
 function updateStats(shown){ document.getElementById('filter-stats').textContent = `${shown} real / ${ALL_REAL.length} total`; }
-// Load postcode coordinates from qld_postcodes_data.json
+// Load postcode coordinates map
 let POSTCODE_COORDS_MAP = {};
 fetch('/static/qld_postcodes_data.json')
   .then(r => r.ok ? r.json() : [])
@@ -739,17 +703,6 @@ fetch('/static/qld_postcodes_data.json')
   })
   .catch(e => console.error('Failed to load postcode coordinates:', e));
 
-// Generate random point within postcode bounds using postcode center + reasonable radius
-function generateRandomPointNearPostcode(postcode, centerLat, centerLng){
-  // Use a radius of about 0.025 degrees (roughly 2-3km depending on latitude)
-  const radius = 0.025;
-  const angle = Math.random() * 2 * Math.PI;
-  const distance = Math.random() * radius;
-  const lat = centerLat + distance * Math.cos(angle);
-  const lng = centerLng + distance * Math.sin(angle);
-  return { lat, lng };
-}
-
 // Fallback bounds if postcode not found in data
 const FALLBACK_BOUNDS = {
   'default': {latMin: -27.55, latMax: -27.40, lngMin: 153.00, lngMax: 153.10}
@@ -768,36 +721,53 @@ function renderReal(){
     let lat = r.lat;
     let lng = r.lng;
 
-    // If no coordinates, generate random ones within postcode bounds using accurate postcode data
-    if(!lat || !lng || !isFinite(lat) || !isFinite(lng)){
+    // If coordinates are missing or invalid, try to place accurately using polygons only
+    if(!isFinite(lat) || !isFinite(lng)){
+      lat = undefined; lng = undefined;
       const postcode = (r.postcode || '').toString();
-      if(POSTCODE_COORDS_MAP[postcode]){
-        const coordData = POSTCODE_COORDS_MAP[postcode];
-        if(coordData.lat && coordData.lng){
-          const point = generateRandomPointNearPostcode(postcode, coordData.lat, coordData.lng);
-          lat = point.lat;
-          lng = point.lng;
-          r.lat = lat;
-          r.lng = lng;
+      const suburbName = (r.suburb && r.suburb.toLowerCase() !== 'resolving...' ? r.suburb : '').toString();
+
+      // Prefer postcode polygon
+      if(postcode){
+        if(POSTCODE_POLY_CACHE.has(postcode)){
+          const poly = POSTCODE_POLY_CACHE.get(postcode);
+          if(poly){
+            const inner = getInnerPolygon(poly, postcode);
+            const pt = randomPointInPolygon(inner);
+            if(pt){ lat = pt.lat; lng = pt.lng; r.lat = lat; r.lng = lng; }
+          }
+        } else if(!POLY_FETCH_INFLIGHT.has(`poa:${postcode}`)){
+          POLY_FETCH_INFLIGHT.add(`poa:${postcode}`);
+          ensurePostcodePolygon(postcode).then(()=>{ POLY_FETCH_INFLIGHT.delete(`poa:${postcode}`); renderReal(); });
         }
       }
-      // If still no coordinates, use fallback
-      if(!lat || !lng || !isFinite(lat) || !isFinite(lng)){
-        const b = FALLBACK_BOUNDS['default'];
-        lat = b.latMin + Math.random() * (b.latMax - b.latMin);
-        lng = b.lngMin + Math.random() * (b.lngMax - b.lngMin);
-        r.lat = lat;
-        r.lng = lng;
+
+      // If still missing, try suburb polygon
+      if((!isFinite(lat) || !isFinite(lng)) && suburbName){
+        const key = suburbName.toLowerCase();
+        if(SUBURB_POLY_CACHE.has(key)){
+          const poly = SUBURB_POLY_CACHE.get(key);
+          if(poly){
+            const inner = getInnerPolygon(poly, suburbName);
+            const pt = randomPointInPolygon(inner);
+            if(pt){ lat = pt.lat; lng = pt.lng; r.lat = lat; r.lng = lng; }
+          }
+        } else if(!POLY_FETCH_INFLIGHT.has(`suburb:${key}`)){
+          POLY_FETCH_INFLIGHT.add(`suburb:${key}`);
+          ensureSuburbPolygon(suburbName).then(()=>{ POLY_FETCH_INFLIGHT.delete(`suburb:${key}`); renderReal(); });
+        }
+      }
+
+      // If we still don't have a valid point, skip rendering this record to avoid misplacement
+      if(!isFinite(lat) || !isFinite(lng)){
+        return; // skip
       }
     }
 
     if(inQld(lat, lng)){
       const m=L.marker([lat,lng],{icon:redIcon});
       m.bindPopup(popupHtmlReal(r));
-      m.on('popupopen', ()=>{
-        // Priority resolve when user clicks
-        priorityResolveCrime(r, m);
-      });
+      m.on('popupopen', ()=>{ priorityResolveCrime(r, m); });
       realCluster.addLayer(m);
       added++;
     }
@@ -815,7 +785,6 @@ function renderUsers(){
 }
 
 // ================== DATA LOAD ==================
-// Store suburbs pending save
 let pendingSaveSuburbs = [];
 
 // Batch save resolved suburbs every minute
@@ -842,7 +811,7 @@ function scheduleBatchSave(){
 }
 
 function loadReal(){
-  // Show loader while loading initial crimes
+  // Show loader only while loading initial crimes
   showLoader('Loading crimes…');
 
   fetch('/static/real_crimes_2025.json')
@@ -851,9 +820,7 @@ function loadReal(){
       ALL_REAL = data.map(normalizeRecord);
 
       // Set all suburbs to 'Resolving...' initially
-      ALL_REAL.forEach(record => {
-        record.suburb = 'Resolving...';
-      });
+      ALL_REAL.forEach(record => { record.suburb = 'Resolving...'; });
 
       console.log(`Loaded ${ALL_REAL.length} real crime records`);
 
@@ -866,8 +833,7 @@ function loadReal(){
 
       try {
         const response = await fetch('/api/get_resolved_suburbs', {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
+          method: 'POST', headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ crimes: crimesToCheck })
         });
 
@@ -885,19 +851,20 @@ function loadReal(){
               appliedCount++;
             }
           });
-
+          // Initialize resolved counter using DB pre-resolved
+          resolvedCount = appliedCount;
+          updateResolveProgress(resolvedCount, ALL_REAL.length);
           console.log(`Applied ${appliedCount} pre-resolved suburbs from database`);
         }
-      } catch(e){
-        console.error('Error loading resolved suburbs:', e);
-      }
+      } catch(e){ console.error('Error loading resolved suburbs:', e); }
 
-      if(ALL_REAL.length > 0){
-        console.log('Sample record:', ALL_REAL[0]);
-      }
+      if(ALL_REAL.length > 0){ console.log('Sample record:', ALL_REAL[0]); }
       renderReal();
 
-      // Start automatic suburb resolution queue (newest to oldest)
+      // Hide loader after initial crimes rendered
+      hideLoader();
+
+      // Start automatic suburb resolution queue
       initializeResolutionQueue();
     })
     .catch((err)=>{ ALL_REAL = []; renderReal(); console.error('Failed to load real_crimes_2025.json:', err); hideLoader(); });
@@ -930,13 +897,13 @@ document.getElementById('time-range').addEventListener('change', function(){
     }
   }
   this.dataset.prev = this.value;
-  // Show loader while applying new date range (will be hidden when resolution finishes)
+  // Show loader briefly for range change to indicate reloading visible crimes
   showLoader('Applying date range…');
   renderReal();
   renderUsers();
-
-  // Re-initialize resolution queue to prioritize crimes in the new date range
+  // Re-prioritize resolution queue for the new date range (no loader during background resolution)
   initializeResolutionQueue();
+  hideLoader();
 });
 document.getElementById('time-range').dataset.prev = '30';
 // Also handle clear button to remove border and re-render
