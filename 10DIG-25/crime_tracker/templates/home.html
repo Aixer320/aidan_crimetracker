@@ -51,6 +51,13 @@
   /* Bug Report Button */
   .bug-report-btn { position:fixed; bottom:20px; right:20px; background:#dc2626; color:#fff; border:none; padding:12px 20px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; box-shadow:0 4px 12px rgba(220,38,38,0.4); z-index:1000; transition:all 0.3s; }
   .bug-report-btn:hover { background:#b91c1c; box-shadow:0 6px 16px rgba(220,38,38,0.6); transform:translateY(-2px); }
+
+  /* Map loading overlay */
+  #map-loader { position:absolute; top:0; left:0; right:0; bottom:0; display:none; align-items:center; justify-content:center; background:rgba(255,255,255,0.78); z-index:800; pointer-events:none; }
+  .loader-box { text-align:center; color:#1f2937; }
+  .spinner { width:36px; height:36px; border:4px solid #93c5fd; border-top-color:#1d4ed8; border-radius:50%; animation:spin 0.9s linear infinite; margin:0 auto 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader-text { font-size:14px; font-weight:600; }
 </style>
 {% endblock %}
 
@@ -131,6 +138,13 @@
     </div>
     <div id="resolve-progress" style="margin-top:6px; font-size:11px; color:#374151; display:none;">Resolving suburbs: 0/0</div>
   </div>
+  <!-- Map loading overlay -->
+  <div id="map-loader">
+    <div class="loader-box">
+      <div class="spinner"></div>
+      <div id="map-loader-text" class="loader-text">Loading suburbs…</div>
+    </div>
+  </div>
 </div>
 <form id="crime-form" class="form-section" method="post" action="{{ url_for('submit_crime') }}">
   <label>Type of Crime:
@@ -176,6 +190,12 @@ console.log('Crime map initializing...');
 const QLD = { minLat:-29.5, maxLat:-9.0, minLng:137.995, maxLng:154.0 };
 const NORMALIZE = s => (s||'').toLowerCase().replace(/\s+/g,' ').trim();
 function inQld(lat,lng){ return lat>=QLD.minLat && lat<=QLD.maxLat && lng>=QLD.minLng && lng<=QLD.maxLng; }
+
+// Loader helpers
+function showLoader(text){ const overlay=document.getElementById('map-loader'); if(!overlay) return; const t=document.getElementById('map-loader-text'); if(t){ t.textContent = text || 'Loading suburbs…'; } overlay.style.display='flex'; }
+function hideLoader(){ const overlay=document.getElementById('map-loader'); if(overlay){ overlay.style.display='none'; } }
+function setLoaderText(text){ const t=document.getElementById('map-loader-text'); if(t){ t.textContent = text; } }
+window.showLoader = showLoader; window.hideLoader = hideLoader; window.setLoaderText = setLoaderText;
 
 function extractPostcode(address){ if(!address) return ''; const m=address.match(/\b(\d{4})\b/); return m?m[1]:''; }
 function parseDateFlexible(str){ if(!str) return null; let d=new Date(str); if(!isNaN(d)) return d; const p=str.trim().split(/\s+/); if(p.length===3){ const [dd,mon,yyyy]=p; const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']; const i=months.indexOf(mon.toLowerCase().slice(0,3)); if(i>=0){ const day=parseInt(dd,10), year=parseInt(yyyy,10); if(day&&year) return new Date(year,i,day);} } return null; }
@@ -593,6 +613,9 @@ async function processResolutionQueue(){
   const totalToResolve = resolutionQueue.length;
   let resolved = 0;
 
+  // Show loader at start of resolution
+  showLoader(`Resolving suburbs… ${resolved}/${totalToResolve}`);
+
   while(resolutionQueue.length > 0){
     // Check if a priority resolve is in progress, if so, pause the queue
     if(priorityResolveInProgress){
@@ -603,6 +626,7 @@ async function processResolutionQueue(){
     const crime = resolutionQueue.shift();
     resolved++;
     updateResolveProgress(resolved, totalToResolve);
+    setLoaderText(`Resolving suburbs… ${resolved}/${totalToResolve}`);
 
     // Skip if already resolved
     if(crime._resolvedSuburb) continue;
@@ -619,6 +643,7 @@ async function processResolutionQueue(){
 
   isResolving = false;
   updateResolveProgress(0, 0);
+  hideLoader();
 }
 
 // Initialize the resolution queue (sorted by date, prioritizing current filter range)
@@ -663,6 +688,13 @@ function initializeResolutionQueue(){
   resolutionQueue = [...inRange, ...outOfRange];
 
   console.log(`Resolution queue initialized: ${inRange.length} in range (priority), ${outOfRange.length} out of range`);
+
+  // Show loader if there are items to resolve
+  if(resolutionQueue.length > 0){
+    showLoader('Resolving suburbs…');
+  } else {
+    hideLoader();
+  }
 
   // Start processing
   processResolutionQueue();
@@ -810,6 +842,9 @@ function scheduleBatchSave(){
 }
 
 function loadReal(){
+  // Show loader while loading initial crimes
+  showLoader('Loading crimes…');
+
   fetch('/static/real_crimes_2025.json')
     .then(r=>{ if(!r.ok) throw new Error('not found'); return r.json(); })
     .then(async data=>{
@@ -865,7 +900,7 @@ function loadReal(){
       // Start automatic suburb resolution queue (newest to oldest)
       initializeResolutionQueue();
     })
-    .catch((err)=>{ ALL_REAL = []; renderReal(); console.error('Failed to load real_crimes_2025.json:', err); });
+    .catch((err)=>{ ALL_REAL = []; renderReal(); console.error('Failed to load real_crimes_2025.json:', err); hideLoader(); });
 }
 fetch('/api/reports').then(r=>r.json()).then(data=>{ USER_REPORTS=data; renderUsers(); });
 loadReal();
@@ -895,6 +930,8 @@ document.getElementById('time-range').addEventListener('change', function(){
     }
   }
   this.dataset.prev = this.value;
+  // Show loader while applying new date range (will be hidden when resolution finishes)
+  showLoader('Applying date range…');
   renderReal();
   renderUsers();
 
@@ -1001,4 +1038,3 @@ window.addEventListener('unhandledrejection', function(event){
 scheduleBatchSave();
 </script>
 {% endblock %}
-
