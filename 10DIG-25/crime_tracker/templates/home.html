@@ -7,17 +7,37 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <script src="https://unpkg.com/@turf/turf@6.5.0/turf.min.js"></script>
+<script src="https://unpkg.com/fuse.js@6.6.2"></script>
+<script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <style>
   #map-container { width: 70vw; margin: 0 auto; }
   #map { height: 600px; width: 100%; margin-bottom: 10px; }
   .form-section { max-width: 420px; margin: 22px auto; }
   #address-bar { display: flex; gap: 8px; margin-bottom: 10px; }
   #clicked-address { margin-bottom: 10px; color: #1976d2; font-weight: 600; }
-  .filter-bar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:8px auto 0; width:70vw; }
+  .filter-bar { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; align-items:center; flex-wrap:wrap; margin:8px auto 0; width:70vw; }
   .filter-bar select, .filter-bar input { padding:7px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; }
   .filter-bar button { padding:7px 14px; border:1px solid #2563eb; background:#2563eb; color:#fff; border-radius:6px; cursor:pointer; }
-  .filter-info { font-size: 0.8rem; color:#555; }
-  .legend-box { position:absolute; top:90px; right:40px; background:#fff; border:1px solid #d2d6dc; padding:10px 12px; font-size:12px; line-height:1.4; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.15); z-index:500; width:190px; }
+  .filter-info { font-size: 0.8rem; color:#555; grid-column: 1 / -1; }
+  .filter-row { display:flex; gap:10px; align-items:center; }
+  .toggle-row { display:flex; gap:16px; align-items:center; }
+  .switch { position:relative; display:inline-block; width:44px; height:24px; }
+  .switch input { display:none; }
+  .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#e5e7eb; transition:.2s; border-radius:24px; }
+  .slider:before { position:absolute; content:""; height:18px; width:18px; left:3px; bottom:3px; background:white; transition:.2s; border-radius:50%; box-shadow:0 1px 3px rgba(0,0,0,0.3); }
+  input:checked + .slider { background:#2563eb; }
+  input:checked + .slider:before { transform: translateX(20px); }
+
+  /* Suggestions dropdown */
+  .suggestions { position:relative; }
+  .suggestions-list { position:absolute; z-index:600; background:#fff; border:1px solid #e2e8f0; width:100%; max-height:220px; overflow:auto; border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,0.08); display:none; }
+  .suggestion-item { padding:8px 10px; cursor:pointer; }
+  .suggestion-item:hover, .suggestion-item.active { background:#f1f5f9; }
+
+  /* No results */
+  #no-results { width:70vw; margin:8px auto; background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; border-radius:8px; padding:8px 10px; display:none; }
+
+  .legend-box { position:absolute; top:90px; right:40px; background:#fff; border:1px solid #d2d6dc; padding:10px 12px; font-size:12px; line-height:1.4; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.15); z-index:500; width:210px; }
   .legend-title { font-weight:bold; margin-bottom:6px; }
   .legend-item { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
   .legend-marker { width:14px; height:23px; background-size:contain; background-repeat:no-repeat; }
@@ -29,15 +49,6 @@
   .anon-row label { margin:0; font-weight:600; cursor:pointer; }
   .comment-row { margin-top:10px; display:none; }
   .comment-row input { width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px; }
-  /* Notice box */
-  .notice-box { width:70vw; margin:8px auto; background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
-  .notice-box button { background:transparent; color:#1e3a8a; border:1px solid #93c5fd; padding:6px 10px; border-radius:6px; cursor:pointer; }
-  .signed-as { width:70vw; margin:8px auto 4px; color:#374151; font-weight:600; display:flex; align-items:center; justify-content:space-between; }
-  .switch-admin-form button { padding:6px 10px; border:0; border-radius:6px; background:#10b981; color:#fff; cursor:pointer; }
-  .user-stats-box { width:70vw; margin:8px auto 12px; background:#f0f9ff; border:1px solid #bfdbfe; border-radius:8px; padding:14px 16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px; }
-  .stat-item { display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .stat-label { font-size:12px; color:#475569; font-weight:500; margin-bottom:6px; }
-  .stat-value { font-size:24px; font-weight:700; color:#0284c7; }
 
   /* Error Modal */
   .error-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:10000; }
@@ -62,6 +73,9 @@
 {% endblock %}
 
 {% block content %}
+<!-- No results banner -->
+<div id="no-results">No matches found. Try a different suburb, postcode, or crime filter.</div>
+
 <!-- Error Modal -->
 <div id="error-modal" class="error-modal">
   <div class="error-modal-content">
@@ -105,19 +119,54 @@
   </div>
 </div>
 <div class="filter-bar">
-  <label for="time-range" style="font-weight:600;">Date range:</label>
-  <select id="time-range">
-    <option value="7">Last 7 days</option>
-    <option value="30" selected>Last 30 days</option>
-    <option value="90">Last 3 months</option>
-    <option value="182">Last 6 months</option>
-    <option value="365">Last 12 months</option>
-    <option value="730">Last 24 months</option>
-    <option value="all">All data</option>
-  </select>
-  <label for="suburb-filter" style="font-weight:600;">Suburb / Postcode:</label>
-  <input type="text" id="suburb-filter" placeholder="e.g. Hamilton or 4006" size="26" />
-  <button type="button" id="clear-suburb-filter">Clear</button>
+  <div class="filter-row">
+    <label for="time-range" style="font-weight:600;">Date range:</label>
+    <select id="time-range">
+      <option value="7">Last 7 days</option>
+      <option value="30" selected>Last 30 days</option>
+      <option value="90">Last 3 months</option>
+      <option value="182">Last 6 months</option>
+      <option value="365">Last 12 months</option>
+      <option value="730">Last 24 months</option>
+      <option value="all">All data</option>
+    </select>
+  </div>
+  <div class="filter-row suggestions">
+    <label for="suburb-filter" style="font-weight:600;">Suburb / Postcode:</label>
+    <input type="text" id="suburb-filter" placeholder="e.g. Hamilton or 4006" />
+    <button type="button" id="clear-suburb-filter">Clear</button>
+    <div id="suburb-suggestions" class="suggestions-list"></div>
+  </div>
+  <div class="filter-row">
+    <label for="crime-filter" style="font-weight:600;">Crime type:</label>
+    <select id="crime-filter">
+      <option value="">All crimes</option>
+      <option>Assault</option>
+      <option>Robbery</option>
+      <option>Other Offences Against the Person</option>
+      <option>Unlawful Entry</option>
+      <option>Other Property Damage</option>
+      <option>Unlawful Use of Motor Vehicle</option>
+      <option>Other Theft (excl. Unlawful Entry)</option>
+      <option>Fraud</option>
+      <option>Handling Stolen Goods</option>
+      <option>Drug Offences</option>
+      <option>Liquor</option>
+      <option>Trespassing & Vagrancy</option>
+      <option>Weapons Act Offences</option>
+      <option>Good Order Offences</option>
+      <option>Traffic & Related Offences</option>
+      <option>Miscellaneous Offences</option>
+      <option>Other/Unsure</option>
+    </select>
+  </div>
+  <div class="toggle-row">
+    <label class="switch" title="Toggle heatmap mode">
+      <input type="checkbox" id="toggle-heat" />
+      <span class="slider"></span>
+    </label>
+    <span>Heatmap mode</span>
+  </div>
   <span class="filter-info" id="filter-stats"></span>
 </div>
 <div id="map-container" style="position:relative;">
@@ -526,27 +575,23 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
 }).addTo(map);
 const realCluster = L.markerClusterGroup({
   chunkedLoading: true,
-  chunkInterval: 300,
-  chunkDelay: 100,
+  chunkInterval: 250,
+  chunkDelay: 150,
   maxClusterRadius: 50,
-  disableClusteringAtZoom: null,
   spiderfyOnMaxZoom: true,
   removeOutsideVisibleBounds: true,
   animate: true,
   animateAddingMarkers: false,
-  singleMarkerMode: false
 });
 const userCluster = L.markerClusterGroup({
   chunkedLoading: true,
-  chunkInterval: 300,
-  chunkDelay: 100,
+  chunkInterval: 250,
+  chunkDelay: 150,
   maxClusterRadius: 50,
-  disableClusteringAtZoom: null,
   spiderfyOnMaxZoom: true,
   removeOutsideVisibleBounds: true,
   animate: true,
   animateAddingMarkers: false,
-  singleMarkerMode: false
 });
 map.addLayer(realCluster); map.addLayer(userCluster);
 
@@ -564,20 +609,75 @@ const redIcon = L.icon({ iconUrl:'https://raw.githubusercontent.com/pointhi/leaf
 const blueIcon= L.icon({ iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png', shadowUrl:'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png', iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41] });
 let ALL_REAL=[]; let USER_REPORTS=[]; let clickMarker; let clickedAddress='';
 
-// ================== FILTERS ==================
+// ================== DATASETS FOR SUGGESTIONS ==================
+let SUGGEST_INDEX = null; // Fuse instance
+let SUGGEST_DATA = [];    // {label, postcode, suburb}
+function buildSuggestions(){
+  const seen = new Set();
+  SUGGEST_DATA = [];
+  // from postcode dataset
+  Object.entries(POSTCODE_COORDS_MAP||{}).forEach(([pc, obj])=>{
+    const label = obj.suburb ? `${obj.suburb} (${pc})` : pc;
+    const key = `${obj.suburb||''}|${pc}`.toLowerCase();
+    if(!seen.has(key)){
+      SUGGEST_DATA.push({ label, postcode: pc, suburb: obj.suburb||'' });
+      seen.add(key);
+    }
+  });
+  // Also include resolved suburbs appearing in data
+  (ALL_REAL||[]).forEach(r=>{
+    const pc = (r.postcode||'').toString();
+    const sub = (r._resolvedSuburb || r.suburb || '').trim();
+    if(sub || pc){
+      const key = `${sub}|${pc}`.toLowerCase();
+      if(!seen.has(key)){
+        const label = sub ? `${sub}${pc?` (${pc})`:''}` : pc;
+        SUGGEST_DATA.push({ label, postcode: pc, suburb: sub });
+        seen.add(key);
+      }
+    }
+  });
+  SUGGEST_INDEX = new Fuse(SUGGEST_DATA, { keys:['label','postcode','suburb'], threshold:0.4, ignoreLocation:true });
+}
+
+function showSuggestions(query){
+  const box = document.getElementById('suburb-suggestions');
+  if(!box) return;
+  box.innerHTML = '';
+  if(!SUGGEST_INDEX || !query){ box.style.display='none'; return; }
+  const results = SUGGEST_INDEX.search(query).slice(0, 10);
+  if(results.length === 0){ box.style.display='none'; return; }
+  results.forEach(res=>{
+    const item = document.createElement('div');
+    item.className = 'suggestion-item';
+    item.textContent = res.item.label;
+    item.onclick = ()=>{
+      document.getElementById('suburb-filter').value = res.item.postcode || res.item.suburb || '';
+      box.style.display = 'none';
+      renderAll();
+    };
+    box.appendChild(item);
+  });
+  box.style.display = 'block';
+}
+function hideSuggestions(){ const box=document.getElementById('suburb-suggestions'); if(box){ box.style.display='none'; } }
+
+// ================== FILTERS (extended) ==================
+function matchesCrime(r){
+  const want = document.getElementById('crime-filter').value;
+  if(!want) return true;
+  return (r.crime_type||'') === want;
+}
 function matchesText(r){
   const raw = document.getElementById('suburb-filter').value;
   const filt = NORMALIZE(raw);
   if(!filt) return true;
   const pc = (r.postcode||'').toString().toLowerCase();
   if(/^\d{3,4}$/.test(filt)) return pc === filt;
-  // Check resolved suburb first (partial match)
   const sub = NORMALIZE(displaySuburb(r));
   if(sub && sub.includes(filt)) return true;
-  // Then check original suburb from imported data (partial match)
   const origSub = NORMALIZE(r.suburb||'');
   if(origSub && origSub !== 'resolving...' && origSub.includes(filt)) return true;
-  // Check suburb from postcode data (for unresolved suburbs)
   const postcode = (r.postcode||'').toString();
   if(postcode && POSTCODE_COORDS_MAP[postcode]){
     const postcodeSub = NORMALIZE(POSTCODE_COORDS_MAP[postcode].suburb || '');
@@ -590,201 +690,44 @@ function dateMatches(r){
   const range = document.getElementById('time-range').value;
   if(range === 'all') return true;
   const d = parseDateFlexible(r.iso_date || r.crime_time);
-  // If date is missing or cannot be parsed, do NOT exclude it
   if(!d) return true;
   const maxDays = parseInt(range, 10);
   if(!isFinite(maxDays)) return true;
   return daysAgo(d) <= maxDays;
 }
-function filteredReal(){ return ALL_REAL.filter(r=> dateMatches(r) && matchesText(r)); }
-function filteredUsers(){ return USER_REPORTS.filter(r=> matchesText(r)); }
+function filteredReal(){ return ALL_REAL.filter(r=> dateMatches(r) && matchesText(r) && matchesCrime(r)); }
+function filteredUsers(){ return USER_REPORTS.filter(r=> matchesText(r) && matchesCrime(r)); }
 
-// ================== POPUPS ==================
-function popupHtmlReal(r){ const area = displaySuburb(r) || 'Resolving suburb…'; return `<b>${r.crime_type||'Crime'}</b><br>${area}${derivePostcode(r)?` (Postcode: ${derivePostcode(r)})`:''}<br>${r.crime_time||''}`; }
-function popupHtmlUser(r){
-  const commentLine = r.comment && r.comment.trim() ? `<br><i>Comment:</i> ${r.comment.trim()}` : '';
-  return `<b>${r.crime_type||'Crime'}</b><br>${displaySuburb(r) || (r.address||'')}${derivePostcode(r)?` (Postcode: ${derivePostcode(r)})`:''}<br>${r.crime_time||''}<br><b>Submitted by:</b> ${r.submitted_by||'Unknown'}${commentLine}`;
+// ================== HEATMAP ==================
+let heatLayer = null; let heatMode = false;
+function buildHeat(){
+  const pts = filteredReal()
+    .map(r=> (isFinite(r.lat)&&isFinite(r.lng)) ? [r.lat, r.lng, 0.8] : null)
+    .filter(Boolean);
+  if(!heatLayer){ heatLayer = L.heatLayer(pts, { radius: 22, blur: 16, maxZoom: 17, minOpacity: 0.3 }); heatLayer.addTo(map); }
+  else { heatLayer.setLatLngs(pts); }
 }
+function enableHeat(){ heatMode=true; if(map.hasLayer(realCluster)) map.removeLayer(realCluster); if(map.hasLayer(userCluster)) map.removeLayer(userCluster); buildHeat(); }
+function disableHeat(){ heatMode=false; if(!map.hasLayer(realCluster)) map.addLayer(realCluster); if(!map.hasLayer(userCluster)) map.addLayer(userCluster); if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; } renderReal(); renderUsers(); }
 
-// ================== SUBURB RESOLUTION STATE ==================
-// Store suburbs that have been resolved
-const resolvedSuburbs = {};
-// Track total resolved count (includes DB pre-resolved + newly resolved)
-let resolvedCount = 0;
-
-// Queue for automatic suburb resolution
-let resolutionQueue = [];
-let isResolving = false;
-let priorityResolveInProgress = false;
-
-// Update resolution progress display (no loader; just a small counter)
-function updateResolveProgress(currentResolved, total){
-  const elem = document.getElementById('resolve-progress');
-  if(total > 0){
-    elem.textContent = `Resolved: ${currentResolved}/${total}`;
-    elem.style.display = 'block';
-  } else {
-    elem.style.display = 'none';
-  }
-}
-
-// Resolve a single crime's suburb with retry logic
-async function resolveCrimeSuburb(crime, retryCount = 0){
-  if(crime._resolvedSuburb || !crime.lat || !crime.lng) return;
-
-  const maxRetries = 3;
-  const retryDelay = 2000; // 2 seconds for retry
-
-  try {
-    const response = await fetch('/api/resolve_suburb', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ lat: crime.lat, lng: crime.lng })
-    });
-
-    if(response.ok){
-      const data = await response.json();
-      if(data.suburb){
-        crime._resolvedSuburb = data.suburb;
-        crime.suburb = data.suburb;
-
-        // Add to pending save queue
-        const crimeDate = crime.crime_time || crime.iso_date || '';
-        const crimeType = crime.crime_type || '';
-        const postcode = (crime.postcode || '').toString();
-
-        if(crimeDate && crimeType && postcode){
-          pendingSaveSuburbs.push({
-            crime_date: crimeDate,
-            crime_type: crimeType,
-            postcode: postcode,
-            suburb: data.suburb
-          });
-        }
-
-        return data.suburb;
-      }
-    } else if(response.status === 429 || response.status >= 500){
-      // Rate limited or server error - retry with exponential backoff
-      if(retryCount < maxRetries){
-        const backoffDelay = retryDelay * Math.pow(2, retryCount);
-        console.log(`Rate limited or server error, retrying in ${backoffDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, backoffDelay));
-        return await resolveCrimeSuburb(crime, retryCount + 1);
-      }
-    }
-  } catch(e){
-    // Connection error - retry if we haven't exceeded max retries
-    if(retryCount < maxRetries){
-      const backoffDelay = retryDelay * Math.pow(2, retryCount);
-      console.log(`Connection error, retrying in ${backoffDelay}ms (attempt ${retryCount + 1}/${maxRetries}):`, e.message);
-      await new Promise(resolve => setTimeout(resolve, backoffDelay));
-      return await resolveCrimeSuburb(crime, retryCount + 1);
-    } else {
-      console.error('Failed to resolve suburb after max retries:', e);
-    }
-  }
-  return null;
-}
-
-// Process the resolution queue (no loader display here)
-async function processResolutionQueue(){
-  if(isResolving || resolutionQueue.length === 0) return;
-
-  isResolving = true;
-
-  while(resolutionQueue.length > 0){
-    if(priorityResolveInProgress){
-      await new Promise(resolve => setTimeout(resolve, 100));
-      continue;
-    }
-
-    const crime = resolutionQueue.shift();
-
-    // Skip if already resolved
-    if(crime._resolvedSuburb) continue;
-
-    const suburb = await resolveCrimeSuburb(crime);
-    if(suburb){
-      // Update resolved counter and UI
-      resolvedCount = Math.min(resolvedCount + 1, ALL_REAL.length);
-      updateResolveProgress(resolvedCount, ALL_REAL.length);
-      // Update any markers that reference this crime
-      renderReal();
-    }
-
-    // Respect Nominatim rate limit
-    await new Promise(resolve => setTimeout(resolve, 1200));
-  }
-
-  isResolving = false;
-}
-
-// Initialize the resolution queue (prioritize current filter range)
-function initializeResolutionQueue(){
-  resolutionQueue = [];
-  const unresolvedCrimes = ALL_REAL.filter(crime => !crime._resolvedSuburb);
-
-  const range = document.getElementById('time-range').value;
-  const inRange = [];
-  const outOfRange = [];
-
-  unresolvedCrimes.forEach(crime => { (dateMatches(crime) ? inRange : outOfRange).push(crime); });
-
-  const sortByDate = (a, b) => {
-    const dateA = parseDateFlexible(a.iso_date || a.crime_time);
-    const dateB = parseDateFlexible(b.iso_date || b.crime_time);
-    if(!dateA && !dateB) return 0; if(!dateA) return 1; if(!dateB) return -1; return dateB.getTime() - dateA.getTime();
-  };
-
-  inRange.sort(sortByDate);
-  outOfRange.sort(sortByDate);
-  resolutionQueue = [...inRange, ...outOfRange];
-
-  // Start processing (no loader shown)
-  processResolutionQueue();
-}
-
-// Priority resolve: called when user clicks a crime marker
-async function priorityResolveCrime(crime, marker){
-  if(crime._resolvedSuburb) return;
-  priorityResolveInProgress = true;
-  const suburb = await resolveCrimeSuburb(crime);
-  if(suburb && marker){
-    // Update resolved counter and UI
-    resolvedCount = Math.min(resolvedCount + 1, ALL_REAL.length);
-    updateResolveProgress(resolvedCount, ALL_REAL.length);
-    marker.setPopupContent(popupHtmlReal(crime));
-  }
-  priorityResolveInProgress = false;
-}
-
-// ================== RENDER FUNCTIONS ==================
+// ================== RENDER HELPERS ==================
 function updateStats(shown){ document.getElementById('filter-stats').textContent = `${shown} real / ${ALL_REAL.length} total`; }
-// Load postcode coordinates map
-let POSTCODE_COORDS_MAP = {};
-fetch('/static/qld_postcodes_data.json')
-  .then(r => r.ok ? r.json() : [])
-  .then(data => {
-    if(Array.isArray(data)){
-      data.forEach(item => {
-        if(item.postcode){
-          POSTCODE_COORDS_MAP[item.postcode.toString()] = {
-            lat: item.latitude,
-            lng: item.longitude,
-            suburb: item.suburb
-          };
-        }
-      });
-      console.log(`Loaded ${Object.keys(POSTCODE_COORDS_MAP).length} postcode coordinates`);
-      // Re-render real crimes now that postcode centroids are available
-      if(Array.isArray(ALL_REAL) && ALL_REAL.length){
-        renderReal();
-      }
-    }
-  })
-  .catch(e => console.error('Failed to load postcode coordinates:', e));
+function updateNoResults(){
+  const anyFilter = NORMALIZE(document.getElementById('suburb-filter').value).length>0 || (document.getElementById('crime-filter').value||'');
+  const realCount = filteredReal().length;
+  const userCount = filteredUsers().length;
+  const show = anyFilter && (realCount + userCount === 0);
+  document.getElementById('no-results').style.display = show ? 'block' : 'none';
+}
+function renderAll(){
+  // Heavy updates: show loader briefly
+  showLoader('Applying filters…');
+  if(heatMode){ buildHeat(); } else { renderReal(); renderUsers(); }
+  updateNoResults();
+  hideLoader();
+}
 
+// ================== RENDER (uses polygon/centroid scatter defined earlier) ==================
 function renderReal(){
   // Make sure the layer is attached
   if(!map.hasLayer(realCluster)) map.addLayer(realCluster);
@@ -855,7 +798,7 @@ function renderUsers(){
   });
 }
 
-// ================== DATA LOAD ==================
+// ================== DATA LOAD & POSTCODE COORDS ==================
 let pendingSaveSuburbs = [];
 
 // Batch save resolved suburbs every minute
@@ -972,7 +915,10 @@ function loadUserStats(){
 loadUserStats();
 
 // ================== EVENTS ==================
-document.getElementById('suburb-filter').addEventListener('input', ()=>{ renderReal(); renderUsers(); });
+document.getElementById('suburb-filter').addEventListener('input', (e)=>{ showSuggestions(e.target.value); renderAll(); });
+document.getElementById('suburb-filter').addEventListener('blur', ()=> setTimeout(hideSuggestions, 150));
+document.getElementById('crime-filter').addEventListener('change', renderAll);
+
 document.getElementById('time-range').addEventListener('change', function(){
   if(this.value === 'all') {
     if(!confirm('Loading all data may take time and impact performance. Proceed?')) {
@@ -981,20 +927,25 @@ document.getElementById('time-range').addEventListener('change', function(){
     }
   }
   this.dataset.prev = this.value;
-  // Show loader briefly for range change to indicate reloading visible crimes
   showLoader('Applying date range…');
-  renderReal();
-  renderUsers();
-  // Re-prioritize resolution queue for the new date range (no loader during background resolution)
+  if(heatMode){ buildHeat(); } else { renderReal(); renderUsers(); }
   initializeResolutionQueue();
+  updateNoResults();
   hideLoader();
 });
 document.getElementById('time-range').dataset.prev = '30';
-// Also handle clear button to remove border and re-render
-document.getElementById('clear-suburb-filter').addEventListener('click',()=>{ document.getElementById('suburb-filter').value=''; renderReal(); renderUsers(); });
+document.getElementById('clear-suburb-filter').addEventListener('click',()=>{ document.getElementById('suburb-filter').value=''; hideSuggestions(); renderAll(); });
 
-document.getElementById('toggle-real').addEventListener('change', e=>{ realVisible=e.target.checked; if(realVisible){ map.addLayer(realCluster);} else { map.removeLayer(realCluster);} renderReal(); });
-document.getElementById('toggle-user').addEventListener('change', e=>{ userVisible=e.target.checked; if(userVisible){ map.addLayer(userCluster);} else { map.removeLayer(userCluster);} renderUsers(); });
+document.getElementById('toggle-real').addEventListener('change', e=>{ realVisible=e.target.checked; if(realVisible && !heatMode){ map.addLayer(realCluster);} else { map.removeLayer(realCluster);} renderAll(); });
+document.getElementById('toggle-user').addEventListener('change', e=>{ userVisible=e.target.checked; if(userVisible && !heatMode){ map.addLayer(userCluster);} else { map.removeLayer(userCluster);} renderAll(); });
+
+document.getElementById('toggle-heat').addEventListener('change', e=>{ if(e.target.checked){ enableHeat(); } else { disableHeat(); } updateNoResults(); });
+
+// Build suggestions once postcode coords and initial data are ready
+function tryBuildSuggestions(){ if(Object.keys(POSTCODE_COORDS_MAP||{}).length && (ALL_REAL||[]).length) buildSuggestions(); }
+
+// Update buildSuggestions after datasets load
+setTimeout(tryBuildSuggestions, 1500);
 
 // Show/hide comment for Other/Unsure; validate on submit
 const crimeTypeSel = document.getElementById('crime_type');
