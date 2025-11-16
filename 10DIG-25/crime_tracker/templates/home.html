@@ -191,9 +191,22 @@ const QLD = { minLat:-29.5, maxLat:-9.0, minLng:137.995, maxLng:154.0 };
 const NORMALIZE = s => (s||'').toLowerCase().replace(/\s+/g,' ').trim();
 function inQld(lat,lng){ return lat>=QLD.minLat && lat<=QLD.maxLat && lng>=QLD.minLng && lng<=QLD.maxLng; }
 
-// Loader helpers (used only during initial crimes load)
-function showLoader(text){ const overlay=document.getElementById('map-loader'); if(!overlay) return; const t=document.getElementById('map-loader-text'); if(t){ t.textContent = text || 'Loading crimes…'; } overlay.style.display='flex'; }
-function hideLoader(){ const overlay=document.getElementById('map-loader'); if(overlay){ overlay.style.display='none'; } }
+// Loader helpers (reference-counted so multiple concurrent loads keep it visible)
+let __loaderCount = 0;
+function showLoader(text){
+  const overlay = document.getElementById('map-loader');
+  if(!overlay) return;
+  const t = document.getElementById('map-loader-text');
+  if(t && text){ t.textContent = text; }
+  __loaderCount = (__loaderCount||0) + 1;
+  overlay.style.display = 'flex';
+}
+function hideLoader(){
+  const overlay = document.getElementById('map-loader');
+  if(!overlay) return;
+  __loaderCount = Math.max((__loaderCount||0) - 1, 0);
+  if(__loaderCount === 0){ overlay.style.display = 'none'; }
+}
 function setLoaderText(text){ const t=document.getElementById('map-loader-text'); if(t){ t.textContent = text; } }
 window.showLoader = showLoader; window.hideLoader = hideLoader; window.setLoaderText = setLoaderText;
 
@@ -703,11 +716,6 @@ fetch('/static/qld_postcodes_data.json')
   })
   .catch(e => console.error('Failed to load postcode coordinates:', e));
 
-// Fallback bounds if postcode not found in data
-const FALLBACK_BOUNDS = {
-  'default': {latMin: -27.55, latMax: -27.40, lngMin: 153.00, lngMax: 153.10}
-};
-
 function renderReal(){
   // Make sure the layer is attached
   if(!map.hasLayer(realCluster)) map.addLayer(realCluster);
@@ -718,50 +726,12 @@ function renderReal(){
   let added=0;
 
   list.forEach((r)=>{
-    let lat = r.lat;
-    let lng = r.lng;
+    const lat = r.lat;
+    const lng = r.lng;
 
-    // If coordinates are missing or invalid, try to place accurately using polygons only
+    // Only render markers when we have valid coordinates; otherwise skip to avoid misplacement
     if(!isFinite(lat) || !isFinite(lng)){
-      lat = undefined; lng = undefined;
-      const postcode = (r.postcode || '').toString();
-      const suburbName = (r.suburb && r.suburb.toLowerCase() !== 'resolving...' ? r.suburb : '').toString();
-
-      // Prefer postcode polygon
-      if(postcode){
-        if(POSTCODE_POLY_CACHE.has(postcode)){
-          const poly = POSTCODE_POLY_CACHE.get(postcode);
-          if(poly){
-            const inner = getInnerPolygon(poly, postcode);
-            const pt = randomPointInPolygon(inner);
-            if(pt){ lat = pt.lat; lng = pt.lng; r.lat = lat; r.lng = lng; }
-          }
-        } else if(!POLY_FETCH_INFLIGHT.has(`poa:${postcode}`)){
-          POLY_FETCH_INFLIGHT.add(`poa:${postcode}`);
-          ensurePostcodePolygon(postcode).then(()=>{ POLY_FETCH_INFLIGHT.delete(`poa:${postcode}`); renderReal(); });
-        }
-      }
-
-      // If still missing, try suburb polygon
-      if((!isFinite(lat) || !isFinite(lng)) && suburbName){
-        const key = suburbName.toLowerCase();
-        if(SUBURB_POLY_CACHE.has(key)){
-          const poly = SUBURB_POLY_CACHE.get(key);
-          if(poly){
-            const inner = getInnerPolygon(poly, suburbName);
-            const pt = randomPointInPolygon(inner);
-            if(pt){ lat = pt.lat; lng = pt.lng; r.lat = lat; r.lng = lng; }
-          }
-        } else if(!POLY_FETCH_INFLIGHT.has(`suburb:${key}`)){
-          POLY_FETCH_INFLIGHT.add(`suburb:${key}`);
-          ensureSuburbPolygon(suburbName).then(()=>{ POLY_FETCH_INFLIGHT.delete(`suburb:${key}`); renderReal(); });
-        }
-      }
-
-      // If we still don't have a valid point, skip rendering this record to avoid misplacement
-      if(!isFinite(lat) || !isFinite(lng)){
-        return; // skip
-      }
+      return; // skip records without precise coordinates
     }
 
     if(inQld(lat, lng)){
@@ -869,7 +839,20 @@ function loadReal(){
     })
     .catch((err)=>{ ALL_REAL = []; renderReal(); console.error('Failed to load real_crimes_2025.json:', err); hideLoader(); });
 }
-fetch('/api/reports').then(r=>r.json()).then(data=>{ USER_REPORTS=data; renderUsers(); });
+async function loadUserReports(){
+  try{
+    showLoader('Loading user reports…');
+    const r = await fetch('/api/reports');
+    const data = await r.json();
+    USER_REPORTS = data;
+    renderUsers();
+  }catch(e){
+    console.error('Failed to load user reports:', e);
+  }finally{
+    hideLoader();
+  }
+}
+loadUserReports();
 loadReal();
 
 // ================== LOAD USER STATS ==================
