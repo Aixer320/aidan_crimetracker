@@ -825,17 +825,13 @@ function scheduleBatchSave(){
 }
 
 function loadReal(){
-  // Show loader only while loading initial crimes
   showLoader('Loading crimes…');
-
-  fetch('/static/real_crimes_2025.json')
-    .then(r=>{ if(!r.ok) throw new Error('not found'); return r.json(); })
+  const realUrl = '{{ url_for("static", filename="real_crimes_2025.json") }}';
+  fetch(realUrl)
+    .then(r=>{ if(!r.ok) throw new Error(`fetch ${realUrl} -> ${r.status}`); return r.json(); })
     .then(async data=>{
-      ALL_REAL = data.map(normalizeRecord);
-
-      // Set all suburbs to 'Resolving...' initially
+      ALL_REAL = Array.isArray(data) ? data.map(normalizeRecord) : [];
       ALL_REAL.forEach(record => { record.suburb = 'Resolving...'; });
-
       console.log(`Loaded ${ALL_REAL.length} real crime records`);
 
       // Load resolved suburbs from database
@@ -881,7 +877,14 @@ function loadReal(){
       // Start automatic suburb resolution queue
       initializeResolutionQueue();
     })
-    .catch((err)=>{ ALL_REAL = []; renderReal(); console.error('Failed to load real_crimes_2025.json:', err); hideLoader(); });
+    .catch((err)=>{
+      ALL_REAL = [];
+      renderReal();
+      console.error('Failed to load real_crimes_2025.json:', err);
+    })
+    .finally(()=>{
+      hideLoader();
+    });
 }
 async function loadUserReports(){
   try{
@@ -898,6 +901,29 @@ async function loadUserReports(){
 }
 loadUserReports();
 loadReal();
+
+// ========= Load postcode coordinates map via Flask static URL =========
+let POSTCODE_COORDS_MAP = {};
+fetch('{{ url_for("static", filename="qld_postcodes_data.json") }}')
+  .then(r => r.ok ? r.json() : [])
+  .then(data => {
+    if(Array.isArray(data)){
+      data.forEach(item => {
+        if(item.postcode){
+          POSTCODE_COORDS_MAP[item.postcode.toString()] = {
+            lat: item.latitude,
+            lng: item.longitude,
+            suburb: item.suburb
+          };
+        }
+      });
+      console.log(`Loaded ${Object.keys(POSTCODE_COORDS_MAP).length} postcode coordinates`);
+      if(Array.isArray(ALL_REAL) && ALL_REAL.length){ renderReal(); }
+      // Build suggestions after coords ready
+      tryBuildSuggestions();
+    }
+  })
+  .catch(e => console.error('Failed to load postcode coordinates:', e));
 
 // ================== LOAD USER STATS ==================
 function loadUserStats(){
@@ -1040,3 +1066,10 @@ window.addEventListener('unhandledrejection', function(event){
 scheduleBatchSave();
 </script>
 {% endblock %}
+<style>
+/* Tweak filter bar spacing to reduce distortion */
+.filter-bar { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.filter-row > label { min-width: 90px; }
+#suburb-filter { min-width: 160px; }
+#crime-filter { min-width: 160px; }
+</style>
