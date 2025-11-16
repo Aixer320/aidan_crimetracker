@@ -15,12 +15,32 @@
   .form-section { max-width: 420px; margin: 22px auto; }
   #address-bar { display: flex; gap: 8px; margin-bottom: 10px; }
   #clicked-address { margin-bottom: 10px; color: #1976d2; font-weight: 600; }
-  .filter-bar { display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px; align-items:center; flex-wrap:wrap; margin:8px auto 0; width:70vw; }
+
+  /* Notice box */
+  .notice-box { width:70vw; margin:8px auto; background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .notice-box button { background:transparent; color:#1e3a8a; border:1px solid #93c5fd; padding:6px 10px; border-radius:6px; cursor:pointer; }
+
+  /* Signed-in bar */
+  .signed-as { width:70vw; margin:8px auto 4px; color:#374151; font-weight:600; display:flex; align-items:center; justify-content:space-between; }
+  .switch-admin-form button { padding:6px 10px; border:0; border-radius:6px; background:#10b981; color:#fff; cursor:pointer; }
+
+  /* User stats box */
+  .user-stats-box { width:70vw; margin:8px auto 12px; background:#f0f9ff; border:1px solid #bfdbfe; border-radius:8px; padding:14px 16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px; }
+  .stat-item { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .stat-label { font-size:12px; color:#475569; font-weight:500; margin-bottom:6px; }
+  .stat-value { font-size:24px; font-weight:700; color:#0284c7; }
+
+  /* Filter bar with fixed layout to avoid shrinkage */
+  .filter-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin:8px auto 0; width:70vw; }
   .filter-bar select, .filter-bar input { padding:7px 8px; border:1px solid #cbd5e1; border-radius:6px; font-size:14px; }
   .filter-bar button { padding:7px 14px; border:1px solid #2563eb; background:#2563eb; color:#fff; border-radius:6px; cursor:pointer; }
-  .filter-info { font-size: 0.8rem; color:#555; grid-column: 1 / -1; }
-  .filter-row { display:flex; gap:10px; align-items:center; }
-  .toggle-row { display:flex; gap:16px; align-items:center; }
+  .filter-info { font-size: 0.8rem; color:#555; width:100%; }
+  .filter-row { display:flex; gap:8px; align-items:center; min-width:fit-content; }
+  .filter-row > label { white-space:nowrap; font-weight:600; }
+  #suburb-filter { min-width:200px; }
+  #crime-filter { min-width:180px; }
+  #time-range { min-width:140px; }
+  .toggle-row { display:flex; gap:10px; align-items:center; }
   .switch { position:relative; display:inline-block; width:44px; height:24px; }
   .switch input { display:none; }
   .slider { position:absolute; cursor:pointer; top:0; left:0; right:0; bottom:0; background:#e5e7eb; transition:.2s; border-radius:24px; }
@@ -698,6 +718,130 @@ function dateMatches(r){
 function filteredReal(){ return ALL_REAL.filter(r=> dateMatches(r) && matchesText(r) && matchesCrime(r)); }
 function filteredUsers(){ return USER_REPORTS.filter(r=> matchesText(r) && matchesCrime(r)); }
 
+// ================== POPUPS ==================
+function popupHtmlReal(r){ const area = displaySuburb(r) || 'Resolving suburb…'; return `<b>${r.crime_type||'Crime'}</b><br>${area}${derivePostcode(r)?` (Postcode: ${derivePostcode(r)})`:''}<br>${r.crime_time||''}`; }
+function popupHtmlUser(r){
+  const commentLine = r.comment && r.comment.trim() ? `<br><i>Comment:</i> ${r.comment.trim()}` : '';
+  return `<b>${r.crime_type||'Crime'}</b><br>${displaySuburb(r) || (r.address||'')}${derivePostcode(r)?` (Postcode: ${derivePostcode(r)})`:''}<br>${r.crime_time||''}<br><b>Submitted by:</b> ${r.submitted_by||'Unknown'}${commentLine}`;
+}
+
+// ================== SUBURB RESOLUTION STATE ==================
+const resolvedSuburbs = {};
+let resolvedCount = 0;
+let resolutionQueue = [];
+let isResolving = false;
+let priorityResolveInProgress = false;
+
+function updateResolveProgress(currentResolved, total){
+  const elem = document.getElementById('resolve-progress');
+  if(total > 0){
+    elem.textContent = `Resolved: ${currentResolved}/${total}`;
+    elem.style.display = 'block';
+  } else {
+    elem.style.display = 'none';
+  }
+}
+
+async function resolveCrimeSuburb(crime, retryCount = 0){
+  if(crime._resolvedSuburb || !crime.lat || !crime.lng) return;
+  const maxRetries = 3;
+  const retryDelay = 2000;
+  try {
+    const response = await fetch('/api/resolve_suburb', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ lat: crime.lat, lng: crime.lng })
+    });
+    if(response.ok){
+      const data = await response.json();
+      if(data.suburb){
+        crime._resolvedSuburb = data.suburb;
+        crime.suburb = data.suburb;
+        const crimeDate = crime.crime_time || crime.iso_date || '';
+        const crimeType = crime.crime_type || '';
+        const postcode = (crime.postcode || '').toString();
+        if(crimeDate && crimeType && postcode){
+          pendingSaveSuburbs.push({
+            crime_date: crimeDate,
+            crime_type: crimeType,
+            postcode: postcode,
+            suburb: data.suburb
+          });
+        }
+        return data.suburb;
+      }
+    } else if(response.status === 429 || response.status >= 500){
+      if(retryCount < maxRetries){
+        const backoffDelay = retryDelay * Math.pow(2, retryCount);
+        console.log(`Rate limited or server error, retrying in ${backoffDelay}ms (attempt ${retryCount + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, backoffDelay));
+        return await resolveCrimeSuburb(crime, retryCount + 1);
+      }
+    }
+  } catch(e){
+    if(retryCount < maxRetries){
+      const backoffDelay = retryDelay * Math.pow(2, retryCount);
+      console.log(`Connection error, retrying in ${backoffDelay}ms (attempt ${retryCount + 1}/${maxRetries}):`, e.message);
+      await new Promise(resolve => setTimeout(resolve, backoffDelay));
+      return await resolveCrimeSuburb(crime, retryCount + 1);
+    } else {
+      console.error('Failed to resolve suburb after max retries:', e);
+    }
+  }
+  return null;
+}
+
+async function processResolutionQueue(){
+  if(isResolving || resolutionQueue.length === 0) return;
+  isResolving = true;
+  while(resolutionQueue.length > 0){
+    if(priorityResolveInProgress){
+      await new Promise(resolve => setTimeout(resolve, 100));
+      continue;
+    }
+    const crime = resolutionQueue.shift();
+    if(crime._resolvedSuburb) continue;
+    const suburb = await resolveCrimeSuburb(crime);
+    if(suburb){
+      resolvedCount = Math.min(resolvedCount + 1, ALL_REAL.length);
+      updateResolveProgress(resolvedCount, ALL_REAL.length);
+      renderReal();
+    }
+    await new Promise(resolve => setTimeout(resolve, 1200));
+  }
+  isResolving = false;
+}
+
+function initializeResolutionQueue(){
+  resolutionQueue = [];
+  const unresolvedCrimes = ALL_REAL.filter(crime => !crime._resolvedSuburb);
+  const range = document.getElementById('time-range').value;
+  const inRange = [];
+  const outOfRange = [];
+  unresolvedCrimes.forEach(crime => { (dateMatches(crime) ? inRange : outOfRange).push(crime); });
+  const sortByDate = (a, b) => {
+    const dateA = parseDateFlexible(a.iso_date || a.crime_time);
+    const dateB = parseDateFlexible(b.iso_date || b.crime_time);
+    if(!dateA && !dateB) return 0; if(!dateA) return 1; if(!dateB) return -1; return dateB.getTime() - dateA.getTime();
+  };
+  inRange.sort(sortByDate);
+  outOfRange.sort(sortByDate);
+  resolutionQueue = [...inRange, ...outOfRange];
+  processResolutionQueue();
+}
+
+async function priorityResolveCrime(crime, marker){
+  if(crime._resolvedSuburb) return;
+  priorityResolveInProgress = true;
+  const suburb = await resolveCrimeSuburb(crime);
+  if(suburb && marker){
+    resolvedCount = Math.min(resolvedCount + 1, ALL_REAL.length);
+    updateResolveProgress(resolvedCount, ALL_REAL.length);
+    marker.setPopupContent(popupHtmlReal(crime));
+  }
+  priorityResolveInProgress = false;
+}
+
 // ================== HEATMAP ==================
 let heatLayer = null; let heatMode = false;
 function buildHeat(){
@@ -1066,10 +1210,3 @@ window.addEventListener('unhandledrejection', function(event){
 scheduleBatchSave();
 </script>
 {% endblock %}
-<style>
-/* Tweak filter bar spacing to reduce distortion */
-.filter-bar { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
-.filter-row > label { min-width: 90px; }
-#suburb-filter { min-width: 160px; }
-#crime-filter { min-width: 160px; }
-</style>
