@@ -437,6 +437,26 @@ function randomPointInPolygon(poly){
   return null;
 }
 
+function seededRandomPointInPolygon(poly, seedStr){
+  const seed = hashString(String(seedStr||''));
+  const rnd = mulberry32(seed);
+  try{
+    const bbox = turf.bbox(poly);
+    // Try up to 1000 seeded samples
+    for(let i=0;i<1000;i++){
+      const rx = rnd();
+      const ry = rnd();
+      const lng = bbox[0] + rx * (bbox[2]-bbox[0]);
+      const lat = bbox[1] + ry * (bbox[3]-bbox[1]);
+      const pt = turf.point([lng,lat]);
+      if(turf.booleanPointInPolygon(pt, poly)){
+        return {lat,lng};
+      }
+    }
+  }catch{}
+  return null;
+}
+
 // ================== GEO HELPERS FOR JITTER ==================
 function hashString(s){
   let h = 2166136261 >>> 0; // FNV-1a base
@@ -778,20 +798,40 @@ function renderReal(){
     let lat = r.lat;
     let lng = r.lng;
 
-    // Deterministic jittered fallback using postcode centroid when coordinates are missing
+    // Prefer seeded polygon placement when coordinates are missing
     if(!isFinite(lat) || !isFinite(lng)){
       const pc = (r.postcode||'').toString();
-      const pcEntry = pc ? POSTCODE_COORDS_MAP[pc] : null;
-      if(pcEntry && isFinite(pcEntry.lat) && isFinite(pcEntry.lng)){
-        // Seed with a stable signature to avoid movement between renders
-        const sig = `${r.crime_type||''}|${r.iso_date||r.crime_time||''}|${pc}`;
-        const centerLat = pcEntry.lat;
-        const centerLng = pcEntry.lng;
-        const pt = jitterAround(centerLat, centerLng, sig, 400); // max 400m
-        lat = pt.lat; lng = pt.lng;
-        r._approx = true;
+      const sig = `${r.crime_type||''}|${r.iso_date||r.crime_time||''}|${pc}`;
+
+      // If we have a postcode polygon, sample a seeded point inside a slightly shrunken polygon
+      if(pc && POSTCODE_POLY_CACHE.has(pc)){
+        const poly = POSTCODE_POLY_CACHE.get(pc);
+        if(poly){
+          const inner = getInnerPolygon(poly, pc);
+          const pt = seededRandomPointInPolygon(inner, sig) || randomPointInPolygon(inner);
+          if(pt){ lat = pt.lat; lng = pt.lng; r._approx = true; }
+        }
+      } else if(pc && !POLY_FETCH_INFLIGHT.has(`poa:${pc}`)){
+        // Fetch polygon asynchronously and re-render when loaded
+        POLY_FETCH_INFLIGHT.add(`poa:${pc}`);
+        ensurePostcodePolygon(pc).then(()=>{ POLY_FETCH_INFLIGHT.delete(`poa:${pc}`); renderReal(); });
+      }
+
+      // If still missing, fallback to postcode centroid seeded jitter (deterministic)
+      if((!isFinite(lat) || !isFinite(lng)) && pc){
+        const pcEntry = POSTCODE_COORDS_MAP[pc];
+        if(pcEntry && isFinite(pcEntry.lat) && isFinite(pcEntry.lng)){
+          const centerLat = pcEntry.lat, centerLng = pcEntry.lng;
+          const pt = jitterAround(centerLat, centerLng, sig, 400);
+          lat = pt.lat; lng = pt.lng; r._approx = true;
+        }
+      }
+
+      // Persist approximate coords so suburb resolution can run (background + click)
+      if(isFinite(lat) && isFinite(lng)){
+        r.lat = lat; r.lng = lng;
       } else {
-        return; // skip records we cannot place safely
+        return; // unrecoverable: skip
       }
     }
 
