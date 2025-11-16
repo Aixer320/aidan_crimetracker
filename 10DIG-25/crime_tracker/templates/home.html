@@ -712,6 +712,10 @@ fetch('/static/qld_postcodes_data.json')
         }
       });
       console.log(`Loaded ${Object.keys(POSTCODE_COORDS_MAP).length} postcode coordinates`);
+      // Re-render real crimes now that postcode centroids are available
+      if(Array.isArray(ALL_REAL) && ALL_REAL.length){
+        renderReal();
+      }
     }
   })
   .catch(e => console.error('Failed to load postcode coordinates:', e));
@@ -726,12 +730,21 @@ function renderReal(){
   let added=0;
 
   list.forEach((r)=>{
-    const lat = r.lat;
-    const lng = r.lng;
+    let lat = r.lat;
+    let lng = r.lng;
 
-    // Only render markers when we have valid coordinates; otherwise skip to avoid misplacement
+    // Deterministic, non-random fallback: use postcode centroid when coordinates are missing
     if(!isFinite(lat) || !isFinite(lng)){
-      return; // skip records without precise coordinates
+      const pc = (r.postcode||'').toString();
+      const pcEntry = pc ? POSTCODE_COORDS_MAP[pc] : null;
+      if(pcEntry && isFinite(pcEntry.lat) && isFinite(pcEntry.lng)){
+        lat = pcEntry.lat;
+        lng = pcEntry.lng;
+        // mark as approximate but do not overwrite original record coords
+        r._approx = true;
+      } else {
+        return; // skip records we cannot place safely
+      }
     }
 
     if(inQld(lat, lng)){
