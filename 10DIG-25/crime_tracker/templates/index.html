@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Aidan's Crime Tracker</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
+
+    <style>
+        body {
+        margin: 0;
+        height: 100vh;
+        font-family: Arial, sans-serif;
+        background: #f4f4f4;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+    }
+        .title {
+            text-align: center;
+            font-size: 2em;
+            font-weight: bold;
+        }
+        .center-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        align-items: center;
+    }
+        .top-right {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 1em;
+        }
+        .bottom-right {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 0.9em;
+            color: #888;
+        }
+        .bottom-left {
+            position: absolute;
+            bottom: 20px;
+            left: 30px;
+        }
+        button {
+            padding: 12px 32px;
+            font-size: 1em;
+            border: none;
+            border-radius: 6px;
+            background: #1976d2;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="top-right" id="signin-status">
+        {% if session.get('admin') %}
+            Admin: {{ session.get('admin') }}
+        {% elif session.get('user') %}
+            User: {{ session.get('user') }}
+        {% else %}
+            not signed in
+        {% endif %}
+    </div>
+    <div class="center-buttons">
+        <div class="title">Aidan&#39;s Crime Tracker</div>
+        <a class="w3-button w3-blue w3-round" href="{{ url_for('user_register') }}">User Register</a>
+        <a class="w3-button w3-blue w3-round" href="{{ url_for('user_login') }}">User Login</a>
+        <a class="w3-button w3-blue w3-round" href="{{ url_for('admin_register') }}">Admin Register</a>
+        <a class="w3-button w3-blue w3-round" href="{{ url_for('admin_login') }}">Admin Login</a>
+    </div>
+    <div class="bottom-left">
+        <a class="w3-button w3-blue w3-round" href="{{ url_for('logout') }}">Logout</a>
+    </div>
+    <div class="bottom-right">Version Control: 1.0</div>
+</body>
+</html>

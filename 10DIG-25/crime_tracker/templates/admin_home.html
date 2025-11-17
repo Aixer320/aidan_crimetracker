@@ -1,0 +1,327 @@
+{% extends 'base.html' %}
+{% block title %}Admin Home - Crime Tracker{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<style>
+  #map-container { width: 70vw; margin: 0 auto; }
+  #map { height: 600px; width: 100%; margin-bottom: 10px; }
+  .form-section { max-width: 400px; margin: 0 auto; }
+  #address-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+  #clicked-address { margin-bottom: 10px; color: #1976d2; font-weight: bold; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+  th { background: #f0f0f0; }
+  .signed-as { width:70vw; margin:8px auto 4px; color:#374151; font-weight:600; }
+  .admin-tools { width:70vw; margin:8px auto 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .admin-tools form { display:flex; align-items:center; gap:8px; }
+  .admin-tools label { margin:0; }
+  .admin-tools input[type="date"], .admin-tools input[type="file"], .admin-tools select { padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; }
+  .admin-tools button { padding:7px 12px; border:0; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; }
+  .bulk-bar { width:70vw; margin:12px auto; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; box-shadow:0 1px 2px rgba(0,0,0,0.05); }
+  .bulk-bar label { margin:0; font-weight:500; color:#374151; display:flex; align-items:center; gap:6px; cursor:pointer; }
+  .bulk-bar input[type="checkbox"] { width:18px; height:18px; cursor:pointer; accent-color:#2563eb; }
+  .bulk-bar select { padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; color:#374151; font-size:14px; cursor:pointer; min-width:150px; }
+  .bulk-bar button { padding:8px 14px; border:0; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; font-weight:500; transition:background 0.2s; }
+  .bulk-bar button:hover { background:#1d4ed8; }
+  .bulk-bar button:disabled { background:#cbd5e1; cursor:not-allowed; }
+  .user-stats-box { width:70vw; margin:8px auto 12px; background:#f0f9ff; border:1px solid #bfdbfe; border-radius:8px; padding:14px 16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px; }
+  .stat-item { display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .stat-label { font-size:12px; color:#475569; font-weight:500; margin-bottom:6px; }
+  .stat-value { font-size:24px; font-weight:700; color:#0284c7; }
+
+  /* Error Modal */
+  .error-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:10000; }
+  .error-modal-content { background:#fff; padding:30px; border-radius:12px; max-width:500px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
+  .error-modal-content h2 { color:#dc2626; margin-bottom:20px; font-size:24px; }
+  .error-modal-content p { color:#374151; line-height:1.6; margin-bottom:20px; font-size:16px; }
+  .error-modal-content .email { color:#2563eb; font-weight:600; font-size:18px; margin:15px 0; }
+  .error-modal-content button { background:#2563eb; color:#fff; border:none; padding:12px 24px; border-radius:6px; cursor:pointer; font-size:16px; font-weight:600; }
+  .error-modal-content button:hover { background:#1d4ed8; }
+
+  /* Bug Report Button */
+  .bug-report-btn { position:fixed; bottom:20px; right:20px; background:#dc2626; color:#fff; border:none; padding:12px 20px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; box-shadow:0 4px 12px rgba(220,38,38,0.4); z-index:1000; transition:all 0.3s; }
+  .bug-report-btn:hover { background:#b91c1c; box-shadow:0 6px 16px rgba(220,38,38,0.6); transform:translateY(-2px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Error Modal -->
+<div id="error-modal" class="error-modal">
+  <div class="error-modal-content">
+    <h2>🐛 Hey, you found an error / bug!</h2>
+    <p>Please immediately contact the creator to fix it. The creator will send a new version to you immediately.</p>
+    <div class="email">aixerstays@gmail.com</div>
+    <button type="button" id="close-error-modal">Close</button>
+  </div>
+</div>
+
+<!-- Bug Report Button -->
+<button type="button" id="bug-report-btn" class="bug-report-btn">🐛 Report Bug</button>
+
+<div class="signed-as">Signed in as: {{ username }}</div>
+<div class="user-stats-box">
+  <div class="stat-item">
+    <div class="stat-label">Your Reports</div>
+    <div class="stat-value" id="stat-total">0</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">Pending</div>
+    <div class="stat-value" id="stat-pending">0</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-label">Approved</div>
+    <div class="stat-value" id="stat-approved">0</div>
+  </div>
+</div>
+<div class="admin-tools">
+  <form method="post" action="/admin/update_last_updated">
+    <label for="last_updated"><strong>Last updated date shown to users:</strong></label>
+    <input type="date" id="last_updated" name="last_updated" value="{{ last_updated }}">
+    <button type="submit">Save date</button>
+  </form>
+  <form id="csv-form" method="post" action="{{ url_for('admin_import_csv') }}" enctype="multipart/form-data">
+    <label><strong>Import CSV for real crimes:</strong></label>
+    <input type="file" id="csv-file-input" name="csv_files" accept=".csv" multiple required>
+    <span id="file-count" style="color:#64748b; font-size:13px; margin-left:6px;"></span>
+    <button type="submit">Import CSV (Batch)</button>
+  </form>
+  <form method="post" action="{{ url_for('admin_switch_to_user') }}">
+    <button type="submit" style="background:#10b981;">Switch to user view</button>
+  </form>
+  <form method="post" action="{{ url_for('admin_clear_real_crimes') }}" onsubmit="return confirm('Clear the real crimes dataset? This will empty static/real_crimes_2025.json.');">
+    <button type="submit" style="background:#ef4444;">Clear real crimes dataset</button>
+  </form>
+</div>
+<div id="map-container">
+  <div id="address-bar">
+    <input type="text" id="address" placeholder="Enter address in Queensland" style="flex:1;">
+    <button type="button" id="find-address">Find address</button>
+  </div>
+  <div id="clicked-address"></div>
+  <div id="map"></div>
+  <div id="map-error" style="color: red; display: none;">You must click inside Queensland.</div>
+</div>
+<div class="bulk-bar">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <label for="select-all">Select all <input type="checkbox" id="select-all"></label>
+  </div>
+  <div style="display:flex; align-items:center; gap:8px;">
+    <label for="bulk-action" style="margin:0; font-weight:500; color:#374151;">Action:</label>
+    <select id="bulk-action">
+      <option value="">— Choose action —</option>
+      <option value="APPROVE">Approve</option>
+      <option value="DISAPPROVE">Disapprove</option>
+      <option value="DELETE">Delete</option>
+    </select>
+  </div>
+  <button type="button" id="apply-bulk">Apply</button>
+</div>
+<h3>Crime Report Log</h3>
+<table id="report-log">
+  <thead>
+    <tr>
+      <th></th>
+      <th>ID</th>
+      <th>Type</th>
+      <th>Time</th>
+      <th>Address</th>
+      <th>Submitted By</th>
+      <th>Status</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
+<script>
+const QLD = { minLat: -29.5, maxLat: -9.0, minLng: 137.995, maxLng: 154.0 };
+function inQld(lat, lng) { return lat >= QLD.minLat && lat <= QLD.maxLat && lng >= QLD.minLng && lng <= QLD.maxLng; }
+let map = L.map('map').setView([-20.9176, 142.7028], 5);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: 'Map data © OpenStreetMap contributors' }).addTo(map);
+const cluster = L.markerClusterGroup({ chunkedLoading:true, maxClusterRadius: 50 });
+map.addLayer(cluster);
+let marker; let clickedAddress = '';
+
+// Show all reports as clustered markers (pending and approved)
+fetch('/api/admin_reports').then(r => r.json()).then(reports => {
+  cluster.clearLayers();
+  reports.forEach(rep => {
+    if (rep.lat && rep.lng) {
+      // Extract display name from submitted_by (handle ANON: prefix)
+      let displayName = rep.submitted_by || 'Unknown';
+      if(displayName.startsWith('ANON:')) { displayName = 'Anonymous'; }
+
+      let popup = `<b>${rep.crime_type}</b><br>${rep.address || ''}<br>${rep.crime_time}<br><b>Submitted by:</b> ${displayName}<br>Status: ${rep.status}`;
+      if (rep.status === 'PENDING') {
+        popup += `<br><button onclick=\"approveReport(${rep.id})\">Approve</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+      } else if (rep.status === 'APPROVED') {
+        popup += `<br><button onclick=\"disapproveReport(${rep.id})\">Disapprove</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+      } else if (rep.status === 'DISAPPROVED') {
+        popup += `<br><button onclick=\"approveReport(${rep.id})\">Approve</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+      } else {
+        popup += `<br><button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+      }
+      const m = L.marker([rep.lat, rep.lng]);
+      m.bindPopup(popup);
+      cluster.addLayer(m);
+    }
+  });
+  // Fill log table with checkboxes
+  const tbody = document.querySelector('#report-log tbody');
+  tbody.innerHTML = '';
+  reports.forEach(rep => {
+    let submitter = rep.submitted_by || 'Unknown';
+    if(submitter.startsWith('ANON:')) { submitter = 'Anonymous'; }
+    tbody.innerHTML += `<tr>
+      <td><input type="checkbox" class="row-select" data-id="${rep.id}"></td>
+      <td>${rep.id}</td>
+      <td>${rep.crime_type}</td>
+      <td>${rep.crime_time}</td>
+      <td>${rep.address || ''}</td>
+      <td>${submitter}</td>
+      <td>${rep.status}</td>
+      <td>` +
+      (rep.status === 'PENDING' ? `<button onclick="approveReport(${rep.id})">Approve</button> ` : '') +
+      (rep.status === 'APPROVED' ? `<button onclick="disapproveReport(${rep.id})">Disapprove</button> ` : '') +
+      (rep.status === 'DISAPPROVED' ? `<button onclick="approveReport(${rep.id})">Approve</button> ` : '') +
+      `<button onclick="deleteReport(${rep.id})">Delete</button></td></tr>`;
+  });
+});
+
+// Bulk actions UI
+const selectAll = document.getElementById('select-all');
+const applyBulk = document.getElementById('apply-bulk');
+selectAll.addEventListener('change', ()=>{
+  document.querySelectorAll('.row-select').forEach(cb => cb.checked = selectAll.checked);
+});
+applyBulk.addEventListener('click', ()=>{
+  const action = document.getElementById('bulk-action').value;
+  if(!action){ alert('Choose a bulk action first.'); return; }
+  const ids = Array.from(document.querySelectorAll('.row-select:checked')).map(cb => parseInt(cb.getAttribute('data-id'),10)).filter(n=>!isNaN(n));
+  if(ids.length === 0){ alert('Select at least one row.'); return; }
+  fetch('/admin/bulk_action', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action, ids }) })
+    .then(r=> r.json()).then(res=>{ if(res.success){ location.reload(); } else { alert(res.error || 'Bulk action failed'); } });
+});
+
+// Approve single
+function approveReport(id) {
+  fetch(`/admin_approve/${id}`, {method: 'POST'}).then(r => r.json()).then(res => {
+    if (res.success) location.reload();
+    else alert('Failed to approve.');
+  });
+}
+// Disapprove single
+function disapproveReport(id) {
+  fetch(`/admin_disapprove/${id}`, {method: 'POST'}).then(r => r.json()).then(res => {
+    if (res.success) location.reload();
+    else alert('Failed to disapprove.');
+  });
+}
+// Delete single
+function deleteReport(id) {
+  if (!confirm('Are you sure you want to delete this report?')) return;
+  fetch(`/admin_delete/${id}`, {method: 'POST'}).then(r => r.json()).then(res => {
+    if (res.success) location.reload();
+    else alert('Failed to delete.');
+  });
+}
+
+// Address search and map click (no submit form here)
+map.on('click', function(e) {
+  let lat = e.latlng.lat, lng = e.latlng.lng;
+  if (!inQld(lat, lng)) {
+    document.getElementById('map-error').style.display = 'block';
+    document.getElementById('clicked-address').textContent = '';
+    if (marker) { map.removeLayer(marker); marker = null; }
+    return;
+  }
+  document.getElementById('map-error').style.display = 'none';
+  if (marker) { marker.setLatLng([lat, lng]); }
+  else { marker = L.marker([lat, lng]).addTo(map); }
+  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+    .then(r => r.json())
+    .then(data => {
+      clickedAddress = data.display_name || '';
+      document.getElementById('clicked-address').textContent = clickedAddress;
+      marker.bindPopup(clickedAddress).openPopup();
+    });
+});
+const findBtn = document.getElementById('find-address');
+findBtn.onclick = function() {
+  const addr = document.getElementById('address').value;
+  if (!addr) return;
+  fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr + ', Queensland, Australia')}`)
+    .then(r => r.json())
+    .then(results => {
+      if (results && results.length > 0) {
+        const lat = parseFloat(results[0].lat), lng = parseFloat(results[0].lon);
+        if (inQld(lat, lng)) {
+          map.setView([lat, lng], 14);
+          if (marker) { marker.setLatLng([lat, lng]); }
+          else { marker = L.marker([lat, lng]).addTo(map); }
+          document.getElementById('clicked-address').textContent = results[0].display_name;
+          marker.bindPopup(results[0].display_name).openPopup();
+        } else {
+          alert('Address is outside Queensland.');
+        }
+      } else {
+        alert('Address not found.');
+      }
+    });
+};
+
+// Load user stats
+function loadUserStats(){
+  fetch('/api/user_stats')
+    .then(r=> r.ok ? r.json() : {})
+    .then(data=>{
+      if(data && data.username){
+        document.getElementById('stat-total').textContent = data.total_crimes;
+        document.getElementById('stat-pending').textContent = data.pending;
+        document.getElementById('stat-approved').textContent = data.approved;
+      }
+    })
+    .catch(err=> console.error('Failed to load user stats:', err));
+}
+loadUserStats();
+
+// ================== ERROR HANDLING & BUG REPORT ==================
+function showErrorModal(){
+  document.getElementById('error-modal').style.display = 'flex';
+}
+
+function hideErrorModal(){
+  document.getElementById('error-modal').style.display = 'none';
+}
+
+// Bug report button
+document.getElementById('bug-report-btn').addEventListener('click', showErrorModal);
+
+// Close error modal
+document.getElementById('close-error-modal').addEventListener('click', hideErrorModal);
+
+// Close modal when clicking outside
+document.getElementById('error-modal').addEventListener('click', function(e){
+  if(e.target === this){
+    hideErrorModal();
+  }
+});
+
+// Global error handler - catches all unhandled errors
+window.addEventListener('error', function(event){
+  console.error('Global error caught:', event.error);
+  showErrorModal();
+  return false;
+});
+
+// Catch unhandled promise rejections
+window.addEventListener('unhandledrejection', function(event){
+  console.error('Unhandled promise rejection:', event.reason);
+  showErrorModal();
+  event.preventDefault();
+});
+</script>
+{% endblock %}

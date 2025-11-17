@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="58f3505c-ca22-41c9-b24f-03da0f2e5711" name="Changes" comment="test message">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/10DIG-25.iml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/copilot.data.migration.agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/copilot.data.migration.ask.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/copilot.data.migration.ask2agent.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/copilot.data.migration.edit.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/inspectionProfiles/Project_Default.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/inspectionProfiles/profiles_settings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/app.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/config.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/requirements.txt" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/static/all_australian_postcode.csv" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/static/qld_postcodes_data.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/static/real_crimes_2025.json" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/admin_home.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/admin_login.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/admin_register.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/base.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/home.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/index.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/test.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/user_login.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/user_register.html" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/sync.ps1" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PythonProject" beforeDir="false" afterPath="$PROJECT_DIR$/PythonProject" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PythonProject/10DIG-25/crime_tracker/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/PythonProject/10DIG-25/crime_tracker/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/PythonProject/10DIG-25/crime_tracker/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/PythonProject/10DIG-25/crime_tracker/templates/home.html" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Jupyter Notebook" />
+        <option value="package.json" />
+        <option value="HTTP Request" />
+        <option value="Dockerfile" />
+        <option value="SQL File" />
+        <option value="Python Script" />
+        <option value="HTML File" />
+      </list>
+    </option>
+  </component>
+  <component name="FlaskConsoleOptions" custom-start-script="import sys; print('Python %s on %s' % (sys.version, sys.platform)); sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo, NoAppException&#10;for module in [&quot;main.py&quot;, &quot;wsgi.py&quot;, &quot;app.py&quot;]:&#10;    try: locals().update(ScriptInfo(app_import_path=module, create_app=None).load_app().make_shell_context()); print(&quot;\nFlask App: %s&quot; % app.import_name); break&#10;    except NoAppException: pass" module-name="PythonProject" is-module-sdk="true">
+    <envs>
+      <env key="FLASK_APP" value="app" />
+    </envs>
+    <option name="myCustomStartScript" value="import sys; print('Python %s on %s' % (sys.version, sys.platform)); sys.path.extend([WORKING_DIR_AND_PYTHON_PATHS])&#10;from flask.cli import ScriptInfo, NoAppException&#10;for module in [&quot;main.py&quot;, &quot;wsgi.py&quot;, &quot;app.py&quot;]:&#10;    try: locals().update(ScriptInfo(app_import_path=module, create_app=None).load_app().make_shell_context()); print(&quot;\nFlask App: %s&quot; % app.import_name); break&#10;    except NoAppException: pass" />
+    <option name="myUseModuleSdk" value="true" />
+    <option name="myModuleName" value="PythonProject" />
+    <option name="myEnvs">
+      <map>
+        <entry key="FLASK_APP" value="app" />
+      </map>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/PythonProject" />
+    <option name="ROOT_SYNC" value="SYNC" />
+  </component>
+  <component name="GitHubPullRequestSearchHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPEN&quot;,
+    &quot;assignee&quot;: &quot;Aixer320&quot;
+  }
+}</component>
+  <component name="GitLabMergeRequestFiltersHistory">{
+  &quot;lastFilter&quot;: {
+    &quot;state&quot;: &quot;OPENED&quot;,
+    &quot;assignee&quot;: {
+      &quot;type&quot;: &quot;org.jetbrains.plugins.gitlab.mergerequest.ui.filters.GitLabMergeRequestsFiltersValue.MergeRequestsMemberFilterValue.MergeRequestsAssigneeFilterValue&quot;,
+      &quot;username&quot;: &quot;Aixer320&quot;,
+      &quot;fullname&quot;: &quot;aixer&quot;
+    }
+  }
+}</component>
+  <component name="GitLabMergeRequestsSettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;first&quot;: &quot;https://gitlab.com/Aixer320/PythonProject.git&quot;,
+    &quot;second&quot;: &quot;0bd1ad66-1d48-416a-a965-0aeaebc72592&quot;
+  }
+}</component>
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/Aixer320/aidan_crimetracker&quot;,
+    &quot;accountId&quot;: &quot;2e2fe5ee-9577-4de9-87d4-26644e073747&quot;
+  }
+}</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/.venv/Lib/site-packages/flask/app.py" root0="FORCE_HIGHLIGHTING" />
+  </component>
+  <component name="ProblemsViewState">
+    <option name="selectedTabId" value="CurrentFile" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2y6x4Nj2lB6G6wU9dNpcPQtrUEa" />
+  <component name="ProjectLevelVcsManager">
+    <OptionsSetting value="false" id="Update" />
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;DefaultHtmlFileTemplate&quot;: &quot;HTML File&quot;,
+    &quot;JavaScript Debug.index.html.executor&quot;: &quot;Run&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;Python.age_calc.executor&quot;: &quot;Run&quot;,
+    &quot;Python.app (1).executor&quot;: &quot;Run&quot;,
+    &quot;Python.app (2).executor&quot;: &quot;Run&quot;,
+    &quot;Python.app (3).executor&quot;: &quot;Run&quot;,
+    &quot;Python.app.executor&quot;: &quot;Run&quot;,
+    &quot;Python.hello_world.executor&quot;: &quot;Run&quot;,
+    &quot;Python.update_real_crimes.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;ToolWindow.GitHub Copilot Chat.ShowToolbar&quot;: &quot;false&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultAutoModeForALLUsers.v1&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;deletionFromPopupRequiresConfirmation&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/User/PycharmProjects/PythonProject/10DIG-25/crime_tracker/static&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;vcs.Git&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  },
+  &quot;keyToStringList&quot;: {
+    &quot;com.intellij.ide.scratch.ScratchImplUtil$2/New Scratch File&quot;: [
+      &quot;AZURE&quot;
+    ]
+  }
+}</component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25\crime_tracker\static" />
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25\crime_tracker\real_crimes_csv" />
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25\crime_tracker" />
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25\athletics_nom\static" />
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25\crime_tracker" />
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25\crime_tracker\real_crimes_csv" />
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25" />
+      <recent name="C:\Users\User\PycharmProjects\PythonProject" />
+      <recent name="C:\Users\User\PycharmProjects\PythonProject\10DIG-25\flask_login\static" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Python.app">
+    <configuration name="app" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="PythonProject" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/10DIG-25/crime_tracker" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/10DIG-25/crime_tracker/app.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="update_real_crimes" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="PythonProject" />
+      <option name="ENV_FILES" value="" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/10DIG-25/crime_tracker" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/10DIG-25/crime_tracker/update_real_crimes.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.app" />
+        <item itemvalue="Python.update_real_crimes" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-js-predefined-d6986cc7102b-3aa1da707db6-JavaScript-PY-252.27397.106" />
+        <option value="bundled-python-sdk-4e2b1448bda8-9a97661f3031-com.jetbrains.pycharm.pro.sharedIndexes.bundled-PY-252.27397.106" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="58f3505c-ca22-41c9-b24f-03da0f2e5711" name="Changes" comment="" />
+      <created>1749168631480</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1749168631480</updated>
+      <workItem from="1749168632584" duration="1856000" />
+      <workItem from="1749521240537" duration="2246000" />
+      <workItem from="1749699217951" duration="930000" />
+      <workItem from="1749769529626" duration="200000" />
+      <workItem from="1749772426847" duration="1260000" />
+      <workItem from="1752554271886" duration="57000" />
+      <workItem from="1752554437468" duration="1779000" />
+      <workItem from="1752636699298" duration="2881000" />
+      <workItem from="1752793479051" duration="4013000" />
+      <workItem from="1753149845680" duration="2250000" />
+      <workItem from="1753328260073" duration="2546000" />
+      <workItem from="1753398252745" duration="331000" />
+      <workItem from="1753398642181" duration="5544000" />
+      <workItem from="1753404310120" duration="26000" />
+      <workItem from="1753763157539" duration="2604000" />
+      <workItem from="1753846500770" duration="2062000" />
+      <workItem from="1754003427698" duration="2172000" />
+      <workItem from="1754005762135" duration="821000" />
+      <workItem from="1754006600777" duration="200000" />
+      <workItem from="1754006837317" duration="1991000" />
+      <workItem from="1754008999573" duration="49000" />
+      <workItem from="1754360179182" duration="1703000" />
+      <workItem from="1754537604261" duration="2876000" />
+      <workItem from="1754607864513" duration="5827000" />
+      <workItem from="1754901186301" duration="611000" />
+      <workItem from="1754902021041" duration="195000" />
+      <workItem from="1754972695572" duration="2559000" />
+      <workItem from="1754990197601" duration="96000" />
+      <workItem from="1755300596986" duration="695000" />
+      <workItem from="1755301551451" duration="485000" />
+      <workItem from="1755318027769" duration="5000" />
+      <workItem from="1755318072749" duration="4442000" />
+      <workItem from="1755568811463" duration="2481000" />
+      <workItem from="1755747180678" duration="2780000" />
+      <workItem from="1755817305205" duration="5105000" />
+      <workItem from="1755823253019" duration="205000" />
+      <workItem from="1756183834688" duration="273000" />
+      <workItem from="1756778679545" duration="2083000" />
+      <workItem from="1756957257303" duration="2315000" />
+      <workItem from="1757392113160" duration="2427000" />
+      <workItem from="1757466824242" duration="2577000" />
+      <workItem from="1757631812919" duration="5711000" />
+      <workItem from="1757988030311" duration="2630000" />
+      <workItem from="1758064486704" duration="1600000" />
+      <workItem from="1758166862965" duration="5000" />
+      <workItem from="1758166928515" duration="2230000" />
+      <workItem from="1758237589180" duration="4930000" />
+      <workItem from="1759811231788" duration="2173000" />
+      <workItem from="1759894444398" duration="2717000" />
+      <workItem from="1759971974663" duration="2894000" />
+      <workItem from="1759977735331" duration="132000" />
+      <workItem from="1760051018429" duration="3989000" />
+      <workItem from="1760327295214" duration="1918000" />
+      <workItem from="1760407368243" duration="2153000" />
+      <workItem from="1760586055199" duration="2111000" />
+      <workItem from="1760655943055" duration="5734000" />
+      <workItem from="1760675600016" duration="2000" />
+      <workItem from="1760676114945" duration="1312000" />
+      <workItem from="1761020966623" duration="2350000" />
+      <workItem from="1761104134507" duration="1223000" />
+      <workItem from="1761105388949" duration="1113000" />
+      <workItem from="1761260882503" duration="631000" />
+      <workItem from="1761262407312" duration="2152000" />
+      <workItem from="1761364192402" duration="1175000" />
+      <workItem from="1761536183708" duration="2489000" />
+      <workItem from="1762124549484" duration="1179000" />
+      <workItem from="1762125769632" duration="1658000" />
+      <workItem from="1762214702265" duration="1654000" />
+      <workItem from="1762230509159" duration="2408000" />
+      <workItem from="1762305062596" duration="2215000" />
+      <workItem from="1762470164880" duration="5700000" />
+      <workItem from="1762826695864" duration="1276000" />
+      <workItem from="1762828196345" duration="388000" />
+      <workItem from="1762828605213" duration="388000" />
+      <workItem from="1762902500087" duration="3439000" />
+      <workItem from="1763004754719" duration="2793000" />
+      <workItem from="1763075546190" duration="1923000" />
+      <workItem from="1763077536245" duration="1697000" />
+      <workItem from="1763185543153" duration="699000" />
+    </task>
+    <task id="LOCAL-00001" summary="Hopefully this works">
+      <option name="closed" value="true" />
+      <created>1763078169256</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1763078169256</updated>
+    </task>
+    <task id="LOCAL-00002" summary="do I have to type this com">
+      <option name="closed" value="true" />
+      <created>1763078517058</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1763078517058</updated>
+    </task>
+    <task id="LOCAL-00003" summary="test message">
+      <option name="closed" value="true" />
+      <created>1763185592235</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1763185592235</updated>
+    </task>
+    <task id="LOCAL-00004" summary="test message">
+      <option name="closed" value="true" />
+      <created>1763185782451</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1763185782451</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <ignored-roots>
+      <path value="$PROJECT_DIR$/../Downloads" />
+      <path value="$PROJECT_DIR$/../Downloads/GitHub" />
+      <path value="$PROJECT_DIR$/10DIG-25/crime_tracker" />
+    </ignored-roots>
+    <MESSAGE value="Hopefully this works" />
+    <MESSAGE value="do I have to type this com" />
+    <MESSAGE value="test message" />
+    <option name="LAST_COMMIT_MESSAGE" value="test message" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/PythonProject$app.coverage" NAME="app Coverage Results" MODIFIED="1763078842781" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/crime_tracker" />
+    <SUITE FILE_PATH="coverage/PythonProject$app__1_.coverage" NAME="app (1) Coverage Results" MODIFIED="1754008379339" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/flask_login" />
+    <SUITE FILE_PATH="coverage/PythonProject$update_real_crimes.coverage" NAME="update_real_crimes Coverage Results" MODIFIED="1759812071803" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/crime_tracker" />
+    <SUITE FILE_PATH="coverage/PythonProject$age_calc.coverage" NAME="age_calc Coverage Results" MODIFIED="1749699666594" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25" />
+    <SUITE FILE_PATH="coverage/PythonProject$app__2_.coverage" NAME="app (2) Coverage Results" MODIFIED="1754360740173" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/flask_logina" />
+    <SUITE FILE_PATH="coverage/PythonProject$hello_world.coverage" NAME="hello_world Coverage Results" MODIFIED="1749169401772" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25" />
+    <SUITE FILE_PATH="coverage/PythonProject$app__3_.coverage" NAME="app (3) Coverage Results" MODIFIED="1756183836994" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/athletics_nom" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
+  </component>
+</project>
