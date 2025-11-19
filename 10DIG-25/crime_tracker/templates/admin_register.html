@@ -2,44 +2,205 @@
 {% block title %}Admin Register{% endblock %}
 {% block head %}
 <style>
-  .register-container { max-width: 400px; margin: 40px auto; }
-  .register-form { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; }
-  .register-form label { display: block; margin-bottom: 12px; font-weight: 500; }
-  .register-form input { width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; box-sizing: border-box; }
-  .register-form button { width: 100%; padding: 10px; margin-top: 16px; border: 0; border-radius: 6px; background: #2563eb; color: white; font-weight: 600; cursor: pointer; }
-  .register-form button:hover { background: #1d4ed8; }
-  .password-requirements { margin-top: 20px; padding: 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; }
-  .requirements-title { font-weight: 600; color: #1e40af; margin-bottom: 10px; }
-  .requirement-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px; color: #475569; }
-  .requirement-item::before { content: '✓'; color: #10b981; font-weight: bold; min-width: 16px; }
+  .register-container {
+    max-width: 500px;
+    margin: 20px auto;
+  }
+  .register-card {
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .icon {
+    font-size: 56px;
+    margin-bottom: 16px;
+  }
+  .admin-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 8px;
+  }
+  .subtitle {
+    color: #6b7280;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .register-form label {
+    display: block;
+    margin-bottom: 20px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+  }
+  .register-form input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    box-sizing: border-box;
+    font-size: 15px;
+    margin-top: 6px;
+    transition: all 0.3s ease;
+    font-family: inherit;
+  }
+  .register-form input:focus {
+    outline: none;
+    border-color: #f5576c;
+    box-shadow: 0 0 0 3px rgba(245, 87, 108, 0.1);
+  }
+  .register-form button {
+    width: 100%;
+    padding: 16px;
+    margin-top: 24px;
+    border: 0;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(245, 87, 108, 0.4);
+  }
+  .register-form button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(245, 87, 108, 0.5);
+  }
+  .password-requirements {
+    margin-top: 24px;
+    padding: 20px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 100%);
+    border: 2px solid #fde68a;
+    border-radius: 12px;
+  }
+  .requirements-title {
+    font-weight: 700;
+    color: #92400e;
+    margin-bottom: 12px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .requirement-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: #78350f;
+    font-weight: 500;
+  }
+  .requirement-item::before {
+    content: '✓';
+    color: #059669;
+    font-weight: bold;
+    font-size: 16px;
+    min-width: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(16, 185, 129, 0.15);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+  }
+  .access-code-info {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 2px solid #fde68a;
+  }
+  .access-code-label {
+    font-weight: 700;
+    color: #92400e;
+    font-size: 13px;
+    margin-bottom: 6px;
+  }
+  .access-code-value {
+    font-family: 'Courier New', monospace;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #f5576c;
+    letter-spacing: 1px;
+    border: 2px dashed #fbbf24;
+    display: inline-block;
+  }
 </style>
 {% endblock %}
 {% block content %}
 <div class="register-container">
-  <h2 style="text-align: center; margin-bottom: 20px;">Admin Registration</h2>
-  <div class="register-form">
-    <form method="post">
-      <label>Access Code:
-        <input type="password" name="access_code" required>
-      </label>
-      <label>Username:
-        <input type="text" name="username" required>
-      </label>
-      <label>Password:
-        <input type="password" name="password" required>
-      </label>
-      <label>Confirm Password:
-        <input type="password" name="confirm" required>
-      </label>
-      <button type="submit">Register</button>
-    </form>
-
-    <div class="password-requirements">
-      <div class="requirements-title">Password Requirements:</div>
-      <div class="requirement-item">At least 8 characters long</div>
-      <div class="requirement-item">Contains at least one uppercase letter (A-Z)</div>
-      <div class="requirement-item">Contains at least one lowercase letter (a-z)</div>
-      <div class="requirement-item">Contains at least one number (0-9)</div>
+  <div class="register-card">
+    <div class="header">
+      <div class="icon">⚙️</div>
+      <div class="admin-badge">ADMIN REGISTRATION</div>
+      <h2>Create Admin Account</h2>
+      <p class="subtitle">Secure administrative access</p>
     </div>
+
+    <div class="register-form">
+      <form method="post">
+        <label>
+          Access Code
+          <input type="password" name="access_code" placeholder="Enter access code" required>
+        </label>
+
+        <label>
+          Username
+          <input type="text" name="username" placeholder="Choose admin username" required>
+        </label>
+
+        <label>
+          Password
+          <input type="password" name="password" placeholder="Create strong password" required>
+        </label>
+
+        <label>
+          Confirm Password
+          <input type="password" name="confirm" placeholder="Confirm your password" required>
+        </label>
+
+        <button type="submit">🔐 Create Admin Account</button>
+      </form>
+
+      <div class="password-requirements">
+        <div class="requirements-title">🔒 Password Requirements</div>
+        <div class="requirement-item">At least 8 characters long</div>
+        <div class="requirement-item">Contains at least one uppercase letter (A-Z)</div>
+        <div class="requirement-item">Contains at least one lowercase letter (a-z)</div>
+        <div class="requirement-item">Contains at least one number (0-9)</div>
+
+        <div class="access-code-info">
+          <div class="access-code-label">🔑 Required Access Code:</div>
+          <div class="access-code-value">1234</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}
 

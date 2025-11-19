@@ -524,6 +524,25 @@ def insert_report(crime_type: str, crime_time: str, lat: float, lng: float,
         return False
 
 
+def insert_report_with_id(crime_type: str, crime_time: str, lat: float, lng: float,
+                          address: str, submitted_by: str, status: str, comment: str = '') -> Optional[int]:
+    """Insert a report and return the inserted row id, or None on failure."""
+    try:
+        with get_db_connection() as conn:
+            cur = conn.execute(
+                'INSERT INTO reports (crime_type, crime_time, lat, lng, address, submitted_by, status, comment) '
+                'VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                (crime_type, crime_time, lat, lng, address, submitted_by, status, comment)
+            )
+            conn.commit()
+            rid = cur.lastrowid
+            logger.info(f"Crime report inserted with id={rid} by {submitted_by}: {crime_type}")
+            return int(rid) if rid else None
+    except Exception as e:
+        logger.error(f"Error inserting report with id return: {e}")
+        return None
+
+
 # ============================================================================
 # FLASK APP INITIALIZATION AND ROUTES
 # ============================================================================
@@ -574,36 +593,54 @@ def submit_crime():
     # Validate coordinates are present
     if lat is None or lng is None:
         flash('Invalid location.', 'error')
+        # Redirect admins back to admin_home, users to home
+        if session.get('admin'):
+            return redirect(url_for('admin_home'))
         return redirect(url_for('home'))
 
     # Validate coordinates are in Queensland
     if not validate_qld_coordinates(lat, lng):
         flash('Only locations in Queensland are supported.', 'error')
+        if session.get('admin'):
+            return redirect(url_for('admin_home'))
         return redirect(url_for('home'))
 
     # Validate required fields
     if not crime_type or not crime_time:
         flash('Please fill in all required fields.', 'error')
+        if session.get('admin'):
+            return redirect(url_for('admin_home'))
         return redirect(url_for('home'))
 
     # Validate crime type is in whitelist
     if not validate_crime_type(crime_type):
         flash('Invalid crime type selected.', 'error')
+        if session.get('admin'):
+            return redirect(url_for('admin_home'))
         return redirect(url_for('home'))
 
     # Validate comment if "Other/Unsure"
     if crime_type == 'Other/Unsure':
         if not comment:
             flash('Please add a short comment (<= 10 words) for Other/Unsure.', 'error')
+            if session.get('admin'):
+                return redirect(url_for('admin_home'))
             return redirect(url_for('home'))
         is_valid, error_msg = validate_comment(comment, config.COMMENT_WORD_LIMIT_OTHER_UNSURE)
         if not is_valid:
             flash(error_msg, 'error')
+            if session.get('admin'):
+                return redirect(url_for('admin_home'))
             return redirect(url_for('home'))
 
     # Determine submitter - use ANON: prefix to track anonymity while preserving username for stats
     actual_username = session.get('username', 'Unknown')
     submitter = f"ANON:{actual_username}" if anonymous else actual_username
+
+    # Check if admin is submitting - if so, auto-approve
+    is_admin = session.get('admin', False)
+    admin_submit = request.form.get('admin_submit') == 'true'
+    status = config.STATUS_APPROVED if (is_admin and admin_submit) else config.STATUS_PENDING
 
     # Insert report into database
     success = insert_report(
@@ -613,15 +650,23 @@ def submit_crime():
         lng=lng,
         address=address,
         submitted_by=submitter,
-        status=config.STATUS_PENDING,
+        status=status,
         comment=comment
     )
 
     if success:
-        flash('Crime report submitted! Pending admin approval.')
+        if status == config.STATUS_APPROVED:
+            flash('Crime report submitted and auto-approved!')
+        else:
+            flash('Crime report submitted! Pending admin approval.')
+        # Redirect admins to admin_home, users to home
+        if is_admin:
+            return redirect(url_for('admin_home'))
         return redirect(url_for('home'))
     else:
         flash('Failed to submit crime report. Please try again.', 'error')
+        if is_admin:
+            return redirect(url_for('admin_home'))
         return redirect(url_for('home'))
 
 @app.route('/api/reports')
@@ -1403,11 +1448,91 @@ def api_save_resolved_suburbs():
         return jsonify({'saved': 0}), 200
 
 
+@app.route('/api/admin_stats')
+def api_admin_stats():
+    """Return overall stats across all reports. Admin-only."""
+    if not session.get('admin'):
+        return jsonify({'error': 'Unauthorized'}), 403
+    try:
+        with get_db_connection() as conn:
+            total = conn.execute('SELECT COUNT(*) as c FROM reports').fetchone()['c']
+            pending = conn.execute("SELECT COUNT(*) as c FROM reports WHERE status = 'PENDING'").fetchone()['c']
+            approved = conn.execute("SELECT COUNT(*) as c FROM reports WHERE status = 'APPROVED'").fetchone()['c']
+        return jsonify({ 'total_reports': total, 'pending': pending, 'approved': approved })
+    except Exception as e:
+        logger.error(f"Error computing admin stats: {e}")
+        return jsonify({ 'total_reports': 0, 'pending': 0, 'approved': 0 }), 200
+
+
+@app.route('/api/submit_crime', methods=['POST'])
+def api_submit_crime():
+    """JSON API to submit a crime report without page refresh."""
+    data = request.get_json(silent=True) or {}
+    lat = parse_coordinate(data.get('lat'))
+    lng = parse_coordinate(data.get('lng'))
+    address = (data.get('address') or '').strip()
+    crime_type = (data.get('crime_type') or '').strip()
+    crime_time = (data.get('crime_time') or '').strip()
+    comment = (data.get('comment') or '').strip()
+    anonymous = bool(data.get('anonymous'))
+    admin_submit = str(data.get('admin_submit') or '').lower() == 'true'
+
+    # Auth required: either user or admin session
+    username = session.get('username')
+    if not username:
+        return jsonify({'error': 'Not logged in'}), 401
+
+    # Validate location
+    if lat is None or lng is None or not validate_qld_coordinates(lat, lng):
+        return jsonify({'error': 'Invalid or out-of-bounds location'}), 400
+
+    # Validate fields
+    if not crime_type or not crime_time:
+        return jsonify({'error': 'Missing required fields'}), 400
+    if not validate_crime_type(crime_type):
+        return jsonify({'error': 'Invalid crime type selected'}), 400
+    if crime_type == 'Other/Unsure':
+        is_valid, error_msg = validate_comment(comment, config.COMMENT_WORD_LIMIT_OTHER_UNSURE)
+        if not is_valid:
+            return jsonify({'error': error_msg or 'Invalid comment'}), 400
+
+    # Determine submitter and status
+    submitter = f"ANON:{username}" if anonymous else username
+    is_admin = bool(session.get('admin'))
+    status = config.STATUS_APPROVED if (is_admin and admin_submit) else config.STATUS_PENDING
+
+    rid = insert_report_with_id(
+        crime_type=crime_type,
+        crime_time=crime_time,
+        lat=lat,
+        lng=lng,
+        address=address,
+        submitted_by=submitter,
+        status=status,
+        comment=comment
+    )
+    if not rid:
+        return jsonify({'error': 'Insert failed'}), 500
+
+    return jsonify({
+        'success': True,
+        'id': rid,
+        'status': status,
+        'report': {
+            'id': rid,
+            'crime_type': crime_type,
+            'crime_time': crime_time,
+            'lat': lat,
+            'lng': lng,
+            'address': address,
+            'submitted_by': submitter,
+            'status': status,
+            'comment': comment
+        }
+    }), 200
+
 if __name__ == '__main__':
     # Initialize DB and run dev server
     init_db()
     init_resolved_suburbs_db()
     app.run(port=config.PORT, debug=config.DEBUG)
-
-#Fix all errors and complete all key functions asap! Copy the latest prompt from AI log
-#and paste it in here

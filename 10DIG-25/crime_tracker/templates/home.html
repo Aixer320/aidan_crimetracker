@@ -10,11 +10,32 @@
 <script src="https://unpkg.com/fuse.js@6.6.2"></script>
 <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
 <style>
-  #map-container { width: 70vw; margin: 0 auto; }
+  /* Map and chart layout */
+  .map-and-chart-container { width: 70vw; margin: 0 auto; display: flex; gap: 20px; }
+  .weekday-chart-container { width: 200px; flex-shrink: 0; }
+  #map-container { flex: 1; position:relative; }
   #map { height: 600px; width: 100%; margin-bottom: 10px; }
   .form-section { max-width: 420px; margin: 22px auto; }
   #address-bar { display: flex; gap: 8px; margin-bottom: 10px; }
   #clicked-address { margin-bottom: 10px; color: #1976d2; font-weight: 600; }
+
+  /* Weekday bar chart */
+  .chart-title { font-weight: 600; font-size: 14px; margin-bottom: 12px; color: #1f2937; text-align: center; }
+  .chart-bars { display: flex; flex-direction: column; gap: 8px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; cursor: pointer; transition: all 0.2s; }
+  .bar-row:hover { transform: translateX(2px); }
+  .bar-label { font-size: 12px; width: 40px; text-align: right; color: #475569; font-weight: 500; }
+  .bar-container { flex: 1; background: #f1f5f9; border-radius: 4px; height: 24px; position: relative; overflow: hidden; }
+  .bar-fill { height: 100%; background: #94a3b8; transition: all 0.3s; border-radius: 4px; }
+  .bar-fill.active { background: #2563eb; }
+  .bar-count { font-size: 11px; color: #1f2937; font-weight: 600; position: absolute; right: 6px; top: 50%; transform: translateY(-50%); }
+
+  /* Monthly pie chart */
+  .monthly-chart-container { width: 200px; flex-shrink: 0; margin-top: 20px; }
+  .pie-chart-wrapper { position: relative; width: 180px; height: 180px; margin: 0 auto; }
+  #monthly-pie-chart { width: 100%; height: 100%; cursor: pointer; }
+  .pie-tooltip { position: absolute; background: rgba(31, 41, 55, 0.95); color: white; padding: 8px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; pointer-events: none; white-space: nowrap; z-index: 1000; display: none; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+  .pie-tooltip::after { content: ''; position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); border-left: 6px solid transparent; border-right: 6px solid transparent; border-top: 6px solid rgba(31, 41, 55, 0.95); }
 
   /* Notice box */
   .notice-box { width:70vw; margin:8px auto; background:#eff6ff; color:#1e3a8a; border:1px solid #bfdbfe; border-radius:8px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
@@ -67,13 +88,25 @@
   /* No results */
   #no-results { width:70vw; margin:8px auto; background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; border-radius:8px; padding:8px 10px; display:none; }
 
-  .legend-box { position:absolute; top:90px; right:40px; background:#fff; border:1px solid #d2d6dc; padding:10px 12px; font-size:12px; line-height:1.4; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.15); z-index:500; width:210px; }
-  .legend-title { font-weight:bold; margin-bottom:6px; }
-  .legend-item { display:flex; align-items:center; gap:6px; margin-bottom:4px; }
-  .legend-marker { width:14px; height:23px; background-size:contain; background-repeat:no-repeat; }
-  .legend-marker.red { background-image:url('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png'); }
-  .legend-marker.blue { background-image:url('https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png'); }
-  .layer-toggles { margin-top:4px; }
+  .legend-box { position:absolute; top:90px; right:40px; background:#fff; border:1px solid #d2d6dc; padding:7.5px 9px; font-size:9px; line-height:1.4; border-radius:6px; box-shadow:0 2px 5px rgba(0,0,0,0.15); z-index:500; width:158px; }
+  .legend-title { font-weight:bold; margin-bottom:4.5px; font-size:10px; }
+  .legend-item { display:flex; align-items:center; gap:4.5px; margin-bottom:3px; }
+  .legend-marker {
+    width: 12px;
+    height: 20px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    flex-shrink: 0;
+  }
+  .legend-marker.red {
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjUiIGhlaWdodD0iNDEiIHZpZXdCb3g9IjAgMCAyNSA0MSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjZDYzZTJhIiBzdHJva2U9IiNGRkYiIHN0cm9rZS13aWR0aD0iMS41IiBkPSJNMTIuNSwwIEMxOS40LDAgMjUsNS42IDI1LDEyLjUgQzI1LDE5LjQgMTIuNSw0MSAxMi41LDQxIFMwLDE5LjQgMCwxMi41IEMwLDUuNiA1LjYsMCAxMi41LDAgeiIvPjxjaXJjbGUgZmlsbD0iI0ZGRiIgY3g9IjEyLjUiIGN5PSIxMi41IiByPSI1LjUiLz48L3N2Zz4=');
+  }
+  .legend-marker.blue {
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjUiIGhlaWdodD0iNDEiIHZpZXdCb3g9IjAgMCAyNSA0MSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBmaWxsPSIjMmE4MWQ2IiBzdHJva2U9IiNGRkYiIHN0cm9rZS13aWR0aD0iMS41IiBkPSJNMTIuNSwwIEMxOS40LDAgMjUsNS42IDI1LDEyLjUgQzI1LDE5LjQgMTIuNSw0MSAxMi41LDQxIFMwLDE5LjQgMCwxMi41IEMwLDUuNiA1LjYsMCAxMi41LDAgeiIvPjxjaXJjbGUgZmlsbD0iI0ZGRiIgY3g9IjEyLjUiIGN5PSIxMi41IiByPSI1LjUiLz48L3N2Zz4=');
+  }
+
+  .layer-toggles { margin-top:3px; }
   .anon-row { display:flex; align-items:center; gap:10px; margin-top:16px; background:#f1f5f9; padding:10px 12px; border-radius:8px; border:1px solid #e2e8f0; }
   .anon-row input { width:auto; margin:0; transform:scale(1.2); cursor:pointer; }
   .anon-row label { margin:0; font-weight:600; cursor:pointer; }
@@ -126,6 +159,15 @@
   </div>
   <button type="button" id="dismiss-info">Dismiss</button>
 </div>
+
+<!-- Beta stage notice -->
+<div id="beta-notice" class="notice-box" style="display:none;">
+  <div>
+    This crime tracker is in beta stage, where only the crimes in main cities are displayed.
+  </div>
+  <button type="button" id="dismiss-beta">Dismiss</button>
+</div>
+
 <div class="signed-as">
   <span>Signed in as: {{ username }}</span>
   {% if can_switch_to_admin %}
@@ -200,7 +242,74 @@
   </div>
   <span class="filter-info" id="filter-stats"></span>
 </div>
-<div id="map-container" style="position:relative;">
+<div class="map-and-chart-container">
+  <!-- Weekday Bar Chart -->
+  <div class="weekday-chart-container">
+    <div class="chart-title">Crimes by Day</div>
+    <div class="chart-bars" id="weekday-chart">
+      <div class="bar-row" data-day="0">
+        <div class="bar-label">Sun</div>
+        <div class="bar-container">
+          <div class="bar-fill" style="width: 0%"></div>
+          <div class="bar-count">0</div>
+        </div>
+      </div>
+      <div class="bar-row" data-day="1">
+        <div class="bar-label">Mon</div>
+        <div class="bar-container">
+          <div class="bar-fill" style="width: 0%"></div>
+          <div class="bar-count">0</div>
+        </div>
+      </div>
+      <div class="bar-row" data-day="2">
+        <div class="bar-label">Tue</div>
+        <div class="bar-container">
+          <div class="bar-fill" style="width: 0%"></div>
+          <div class="bar-count">0</div>
+        </div>
+      </div>
+      <div class="bar-row" data-day="3">
+        <div class="bar-label">Wed</div>
+        <div class="bar-container">
+          <div class="bar-fill" style="width: 0%"></div>
+          <div class="bar-count">0</div>
+        </div>
+      </div>
+      <div class="bar-row" data-day="4">
+        <div class="bar-label">Thu</div>
+        <div class="bar-container">
+          <div class="bar-fill" style="width: 0%"></div>
+          <div class="bar-count">0</div>
+        </div>
+      </div>
+      <div class="bar-row" data-day="5">
+        <div class="bar-label">Fri</div>
+        <div class="bar-container">
+          <div class="bar-fill" style="width: 0%"></div>
+          <div class="bar-count">0</div>
+        </div>
+      </div>
+      <div class="bar-row" data-day="6">
+        <div class="bar-label">Sat</div>
+        <div class="bar-container">
+          <div class="bar-fill" style="width: 0%"></div>
+          <div class="bar-count">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Pie Chart -->
+    <div class="monthly-chart-container">
+      <div class="chart-title">Crimes by Month</div>
+      <div class="pie-chart-wrapper">
+        <svg id="monthly-pie-chart" viewBox="0 0 200 200"></svg>
+        <div id="pie-tooltip" class="pie-tooltip"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Container -->
+  <div id="map-container" style="position:relative;">
   <div id="clicked-address"></div>
   <div id="map"></div>
   <div id="map-error" style="color:#b91c1c; display:none;">You must click inside Queensland.</div>
@@ -225,6 +334,7 @@
       <div id="map-loader-text" class="loader-text">Loading crimes…</div>
     </div>
   </div>
+</div>
 </div>
 <form id="crime-form" class="form-section" method="post" action="{{ url_for('submit_crime') }}">
   <label>Type of Crime:
@@ -262,7 +372,8 @@
   <input type="hidden" name="lat" id="lat">
   <input type="hidden" name="lng" id="lng">
   <input type="hidden" name="address" id="hidden-address">
-  <button type="submit">Submit Report</button>
+  <button type="submit" id="submit-report-btn">Submit Report</button>
+  <div id="submit-msg" style="margin-top:8px; font-size:13px; color:#065f46; display:none;">Submitted.</div>
 </form>
 <script>
 // ================== CONFIG & HELPERS ==================
@@ -291,7 +402,34 @@ function setLoaderText(text){ const t=document.getElementById('map-loader-text')
 window.showLoader = showLoader; window.hideLoader = hideLoader; window.setLoaderText = setLoaderText;
 
 function extractPostcode(address){ if(!address) return ''; const m=address.match(/\b(\d{4})\b/); return m?m[1]:''; }
-function parseDateFlexible(str){ if(!str) return null; let d=new Date(str); if(!isNaN(d)) return d; const p=str.trim().split(/\s+/); if(p.length===3){ const [dd,mon,yyyy]=p; const months=['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']; const i=months.indexOf(mon.toLowerCase().slice(0,3)); if(i>=0){ const day=parseInt(dd,10), year=parseInt(yyyy,10); if(day&&year) return new Date(year,i,day);} } return null; }
+function parseDateFlexible(str){
+  if(!str) return null;
+
+  // Try standard Date parsing first
+  let d = new Date(str);
+  if(!isNaN(d.getTime())) {
+    // Validate it's a reasonable date (not too far in past or future)
+    const year = d.getFullYear();
+    if(year >= 2020 && year <= 2026) return d;
+  }
+
+  // Try manual parsing for "DD Mon YYYY" format
+  const p = str.trim().split(/\s+/);
+  if(p.length === 3){
+    const [dd, mon, yyyy] = p;
+    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const i = months.indexOf(mon.toLowerCase().slice(0,3));
+    if(i >= 0){
+      const day = parseInt(dd, 10);
+      const year = parseInt(yyyy, 10);
+      if(day && year && year >= 2020 && year <= 2026) {
+        return new Date(year, i, day);
+      }
+    }
+  }
+
+  return null;
+}
 function daysAgo(d){ return (Date.now()-d.getTime())/(1000*60*60*24); }
 
 function parseFeatureGeom(r){ const f=r.feature||r.geometry||''; if(typeof f!=='string') return null; const m=f.match(/POINT\s*\(\s*([\-\d\.]+)\s+([\-\d\.]+)\s*\)/i); if(m){ const lon=parseFloat(m[1]), lat=parseFloat(m[2]); if(isFinite(lat)&&isFinite(lon)) return {lat, lng:lon}; } return null; }
@@ -560,145 +698,32 @@ function metersToDegLng(m, lat){ return m / (111320 * Math.cos((lat||0) * Math.P
 function jitterAround(lat0, lng0, seedStr, maxMeters){
   const seed = hashString(String(seedStr||''));
   const rnd = mulberry32(seed);
-  // Use a slight bias away from center: r in [0.2,1.0] * maxMeters
-  const r = (0.2 + 0.8 * rnd()) * (maxMeters||400);
+  const base = maxMeters || 1000; // increased to 1000m for more realistic spread
+  const r = (0.2 + 0.8 * rnd()) * base;
   const theta = rnd() * Math.PI * 2;
   const dLat = metersToDegLat(r * Math.cos(theta));
   const dLng = metersToDegLng(r * Math.sin(theta), lat0);
   let lat = lat0 + dLat;
   let lng = lng0 + dLng;
-  // Clamp back to QLD if somehow outside due to numerical edge cases
   if(!inQld(lat,lng)){
-    // shrink radius progressively
     for(let k=0;k<4;k++){
       const shrink = 0.5 ** (k+1);
       const latTry = lat0 + dLat * shrink;
       const lngTry = lng0 + dLng * shrink;
       if(inQld(latTry, lngTry)){ lat=latTry; lng=lngTry; break; }
     }
-    // final fallback: return original centroid
     if(!inQld(lat,lng)){ lat = lat0; lng = lng0; }
   }
   return {lat,lng};
 }
 
-// ================== MAP & LAYERS ==================
-let map = L.map('map', {
-  maxZoom: 19,
-  preferCanvas: true,
-  inertia: true,
-  inertiaDeceleration: 3000,
-  inertiaMaxSpeed: 1500,
-  zoomSnap: 0.5,
-  zoomDelta: 0.5,
-  wheelPxPerZoomLevel: 60,
-  tap: false,
-  tapTolerance: 15,
-  bounceAtZoomLimits: false
-}).setView([-27.4675,153.0487], 12);
-
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-  attribution:'Map data © OpenStreetMap contributors',
-  maxZoom: 19,
-  updateWhenIdle: false,
-  updateWhenZooming: false,
-  keepBuffer: 2
-}).addTo(map);
-const realCluster = L.markerClusterGroup({
-  chunkedLoading: true,
-  chunkInterval: 250,
-  chunkDelay: 150,
-  maxClusterRadius: 50,
-  spiderfyOnMaxZoom: true,
-  removeOutsideVisibleBounds: true,
-  animate: true,
-  animateAddingMarkers: false,
-});
-const userCluster = L.markerClusterGroup({
-  chunkedLoading: true,
-  chunkInterval: 250,
-  chunkDelay: 150,
-  maxClusterRadius: 50,
-  spiderfyOnMaxZoom: true,
-  removeOutsideVisibleBounds: true,
-  animate: true,
-  animateAddingMarkers: false,
-});
-map.addLayer(realCluster); map.addLayer(userCluster);
-
-// On cluster click: zoom to bounds or spiderfy at max zoom
-realCluster.on('clusterclick', function (a) {
-  if (map.getZoom() < map.getMaxZoom()) {
-    map.fitBounds(a.layer.getBounds(), { padding: [20,20] });
-  } else {
-    a.layer.spiderfy();
-  }
-});
-
-let realVisible=true, userVisible=true;
-const redIcon = L.icon({ iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png', shadowUrl:'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png', iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41] });
-const blueIcon= L.icon({ iconUrl:'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png', shadowUrl:'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png', iconSize:[25,41], iconAnchor:[12,41], popupAnchor:[1,-34], shadowSize:[41,41] });
-let ALL_REAL=[]; let USER_REPORTS=[]; let clickMarker; let clickedAddress='';
-
-// ================== DATASETS FOR SUGGESTIONS ==================
-let SUGGEST_INDEX = null; // Fuse instance
-let SUGGEST_DATA = [];    // {label, postcode, suburb}
-function buildSuggestions(){
-  const seen = new Set();
-  SUGGEST_DATA = [];
-  // from postcode dataset
-  Object.entries(POSTCODE_COORDS_MAP||{}).forEach(([pc, obj])=>{
-    const label = obj.suburb ? `${obj.suburb} (${pc})` : pc;
-    const key = `${obj.suburb||''}|${pc}`.toLowerCase();
-    if(!seen.has(key)){
-      SUGGEST_DATA.push({ label, postcode: pc, suburb: obj.suburb||'' });
-      seen.add(key);
-    }
-  });
-  // Also include resolved suburbs appearing in data
-  (ALL_REAL||[]).forEach(r=>{
-    const pc = (r.postcode||'').toString();
-    const sub = (r._resolvedSuburb || r.suburb || '').trim();
-    if(sub || pc){
-      const key = `${sub}|${pc}`.toLowerCase();
-      if(!seen.has(key)){
-        const label = sub ? `${sub}${pc?` (${pc})`:''}` : pc;
-        SUGGEST_DATA.push({ label, postcode: pc, suburb: sub });
-        seen.add(key);
-      }
-    }
-  });
-  SUGGEST_INDEX = new Fuse(SUGGEST_DATA, { keys:['label','postcode','suburb'], threshold:0.4, ignoreLocation:true });
-}
-
-function showSuggestions(query){
-  const box = document.getElementById('suburb-suggestions');
-  if(!box) return;
-  box.innerHTML = '';
-  if(!SUGGEST_INDEX || !query){ box.style.display='none'; return; }
-  const results = SUGGEST_INDEX.search(query).slice(0, 10);
-  if(results.length === 0){ box.style.display='none'; return; }
-  results.forEach(res=>{
-    const item = document.createElement('div');
-    item.className = 'suggestion-item';
-    item.textContent = res.item.label;
-    item.onclick = ()=>{
-      document.getElementById('suburb-filter').value = res.item.postcode || res.item.suburb || '';
-      box.style.display = 'none';
-      renderAll();
-    };
-    box.appendChild(item);
-  });
-  box.style.display = 'block';
-}
-function hideSuggestions(){ const box=document.getElementById('suburb-suggestions'); if(box){ box.style.display='none'; } }
-
-// ================== FILTERS (extended) ==================
+// ================== FILTERS ==================
 function matchesCrime(r){
   const want = document.getElementById('crime-filter').value;
   if(!want) return true;
   return (r.crime_type||'') === want;
 }
+
 function matchesText(r){
   const raw = document.getElementById('suburb-filter').value;
   const filt = NORMALIZE(raw);
@@ -717,17 +742,46 @@ function matchesText(r){
   const addr = NORMALIZE(r.address||'');
   return addr.includes(filt);
 }
+
 function dateMatches(r){
   const range = document.getElementById('time-range').value;
+
+  // If range is "all", include all crimes regardless of date validity
   if(range === 'all') return true;
+
+  // Parse the date
   const d = parseDateFlexible(r.iso_date || r.crime_time);
-  if(!d) return true;
+
+  // Exclude crimes with no valid date for specific ranges
+  if(!d || isNaN(d.getTime())) return false;
+
+
   const maxDays = parseInt(range, 10);
   if(!isFinite(maxDays)) return true;
+
   return daysAgo(d) <= maxDays;
 }
-function filteredReal(){ return ALL_REAL.filter(r=> dateMatches(r) && matchesText(r) && matchesCrime(r)); }
-function filteredUsers(){ return USER_REPORTS.filter(r=> matchesText(r) && matchesCrime(r)); }
+
+// Global weekday filter state
+let selectedWeekday = null; // null means no filter
+let selectedMonth = null; // null means no filter
+
+function weekdayMatches(r){
+  if(selectedWeekday === null) return true;
+  const d = parseDateFlexible(r.iso_date || r.crime_time);
+  if(!d) return true; // if unknown, don't exclude
+  return d.getDay() === selectedWeekday;
+}
+
+function monthMatches(r){
+  if(selectedMonth === null) return true;
+  const d = parseDateFlexible(r.iso_date || r.crime_time);
+  if(!d) return false; // Exclude crimes with no valid date when filtering by month
+  return d.getMonth() === selectedMonth;
+}
+
+function filteredReal(){ return ALL_REAL.filter(r=> dateMatches(r) && weekdayMatches(r) && monthMatches(r) && matchesText(r) && matchesCrime(r)); }
+function filteredUsers(){ return USER_REPORTS.filter(r=> weekdayMatches(r) && monthMatches(r) && matchesText(r) && matchesCrime(r)); }
 
 // ================== POPUPS ==================
 function popupHtmlReal(r){ const area = displaySuburb(r) || 'Resolving suburb…'; return `<b>${r.crime_type||'Crime'}</b><br>${area}${derivePostcode(r)?` (Postcode: ${derivePostcode(r)})`:''}<br>${r.crime_time||''}`; }
@@ -755,6 +809,29 @@ function updateResolveProgress(currentResolved, total){
 
 async function resolveCrimeSuburb(crime, retryCount = 0){
   if(crime._resolvedSuburb || !crime.lat || !crime.lng) return;
+
+  // If this crime was scattered using postcode data and we have suburb info, use that first
+  const pc = (crime.postcode || '').toString();
+  if(crime._approx && pc && POSTCODE_COORDS_MAP[pc] && POSTCODE_COORDS_MAP[pc].suburb){
+    const suburbName = POSTCODE_COORDS_MAP[pc].suburb;
+    crime._resolvedSuburb = suburbName;
+    crime.suburb = suburbName;
+
+    // Save to database
+    const crimeDate = crime.crime_time || crime.iso_date || '';
+    const crimeType = crime.crime_type || '';
+    if(crimeDate && crimeType && pc){
+      pendingSaveSuburbs.push({
+        crime_date: crimeDate,
+        crime_type: crimeType,
+        postcode: pc,
+        suburb: suburbName
+      });
+    }
+    return suburbName;
+  }
+
+  // Otherwise use Nominatim API for precise resolution
   const maxRetries = 3;
   const retryDelay = 2000;
   try {
@@ -816,8 +893,12 @@ async function processResolutionQueue(){
     if(suburb){
       resolvedCount = Math.min(resolvedCount + 1, ALL_REAL.length);
       updateResolveProgress(resolvedCount, ALL_REAL.length);
-      renderReal();
+      // Update only this marker's popup if marker exists; avoid re-render flicker
+      if(crime._marker){
+        crime._marker.setPopupContent(popupHtmlReal(crime));
+      }
     }
+    // Gentle pacing to respect rate limits and UI smoothness
     await new Promise(resolve => setTimeout(resolve, 1200));
   }
   isResolving = false;
@@ -853,20 +934,325 @@ async function priorityResolveCrime(crime, marker){
   priorityResolveInProgress = false;
 }
 
+// ================== WEEKDAY BAR CHART ==================
+function updateWeekdayChart(){
+  // Count crimes by weekday from currently filtered data (excluding weekday filter itself)
+  const tempWeekday = selectedWeekday; // Save current
+  selectedWeekday = null; // Temporarily disable weekday filter
+
+  const filtered = ALL_REAL.filter(r=> dateMatches(r) && monthMatches(r) && matchesText(r) && matchesCrime(r));
+
+  selectedWeekday = tempWeekday; // Restore
+
+  const counts = [0, 0, 0, 0, 0, 0, 0]; // Sun-Sat
+  const seenKeys = new Set(); // Track unique crimes
+
+  // Only count crimes that have valid dates AND would appear on the map
+  filtered.forEach(r => {
+    // Create unique key to prevent duplicates
+    const crimeKey = `${r.crime_type}|${r.crime_time || r.iso_date}|${r.postcode}`;
+    if(seenKeys.has(crimeKey)) return; // Skip duplicates
+    seenKeys.add(crimeKey);
+
+    const d = parseDateFlexible(r.iso_date || r.crime_time);
+    if(!d || isNaN(d.getTime())) return; // Skip crimes with no valid date
+
+    // Check if this crime has or can get valid coordinates in QLD
+    let lat = r.lat;
+    let lng = r.lng;
+
+    // If no coordinates, check if we can generate them (same logic as renderReal)
+    if(!isFinite(lat) || !isFinite(lng)){
+      const pc = (r.postcode||'').toString();
+      if(pc && POSTCODE_COORDS_MAP[pc]){
+        const pcEntry = POSTCODE_COORDS_MAP[pc];
+        if(isFinite(pcEntry.lat) && isFinite(pcEntry.lng)){
+          lat = pcEntry.lat;
+          lng = pcEntry.lng;
+        }
+      }
+    }
+
+    // Only count if we have valid QLD coordinates
+    if(isFinite(lat) && isFinite(lng) && inQld(lat, lng)){
+      const day = d.getDay();
+      counts[day]++;
+    }
+  });
+
+  const maxCount = Math.max(...counts, 1);
+
+  // Update each bar
+  document.querySelectorAll('.bar-row').forEach((row, idx) => {
+    const count = counts[idx];
+    const percentage = (count / maxCount) * 100;
+    const fill = row.querySelector('.bar-fill');
+    const countElem = row.querySelector('.bar-count');
+
+    fill.style.width = percentage + '%';
+    countElem.textContent = count;
+
+    // Highlight if this day is selected
+    if(selectedWeekday === idx){
+      fill.classList.add('active');
+    } else {
+      fill.classList.remove('active');
+    }
+  });
+}
+
+function setupWeekdayChart(){
+  document.querySelectorAll('.bar-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const day = parseInt(row.dataset.day, 10);
+
+      // Toggle: if already selected, deselect
+      if(selectedWeekday === day){
+        selectedWeekday = null;
+      } else {
+        selectedWeekday = day;
+      }
+
+      // Update chart visuals and re-render
+      updateWeekdayChart();
+      renderAll();
+    });
+  });
+}
+
+// ================== MONTHLY PIE CHART ==================
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e',
+  '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9', '#3b82f6', '#6366f1'
+];
+
+function updateMonthlyPieChart(){
+  // Count crimes by month from currently filtered data (excluding month filter itself)
+  const tempMonth = selectedMonth;
+  selectedMonth = null; // Temporarily disable month filter
+
+  const filtered = ALL_REAL.filter(r=> dateMatches(r) && weekdayMatches(r) && matchesText(r) && matchesCrime(r));
+
+  selectedMonth = tempMonth; // Restore
+
+  const counts = new Array(12).fill(0);
+  const seenKeys = new Set(); // Track unique crimes
+
+  // Only count crimes that have valid dates AND would appear on the map
+  filtered.forEach(r => {
+    // Create unique key to prevent duplicates
+    const crimeKey = `${r.crime_type}|${r.crime_time || r.iso_date}|${r.postcode}`;
+    if(seenKeys.has(crimeKey)) return; // Skip duplicates
+    seenKeys.add(crimeKey);
+
+    const d = parseDateFlexible(r.iso_date || r.crime_time);
+    if(!d || isNaN(d.getTime())) return; // Skip crimes with no valid date
+
+    // Check if this crime has or can get valid coordinates in QLD
+    let lat = r.lat;
+    let lng = r.lng;
+
+    // If no coordinates, check if we can generate them (same logic as renderReal)
+    if(!isFinite(lat) || !isFinite(lng)){
+      const pc = (r.postcode||'').toString();
+      if(pc && POSTCODE_COORDS_MAP[pc]){
+        const pcEntry = POSTCODE_COORDS_MAP[pc];
+        if(isFinite(pcEntry.lat) && isFinite(pcEntry.lng)){
+          lat = pcEntry.lat;
+          lng = pcEntry.lng;
+        }
+      }
+    }
+
+    // Only count if we have valid QLD coordinates
+    if(isFinite(lat) && isFinite(lng) && inQld(lat, lng)){
+      const month = d.getMonth();
+      counts[month]++;
+    }
+  });
+
+  // Draw pie chart
+  const svg = document.getElementById('monthly-pie-chart');
+  svg.innerHTML = ''; // Clear existing
+
+  const total = counts.reduce((a, b) => a + b, 0);
+  if(total === 0) return;
+
+  const cx = 100, cy = 100, radius = 80;
+  let currentAngle = -90; // Start at top
+
+  counts.forEach((count, monthIdx) => {
+    if(count === 0) return;
+
+    const sliceAngle = (count / total) * 360;
+    const endAngle = currentAngle + sliceAngle;
+
+    // Calculate path
+    const startRad = (currentAngle * Math.PI) / 180;
+    const endRad = (endAngle * Math.PI) / 180;
+    const x1 = cx + radius * Math.cos(startRad);
+    const y1 = cy + radius * Math.sin(startRad);
+    const x2 = cx + radius * Math.cos(endRad);
+    const y2 = cy + radius * Math.sin(endRad);
+    const largeArc = sliceAngle > 180 ? 1 : 0;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z`);
+    path.setAttribute('fill', MONTH_COLORS[monthIdx]);
+    path.setAttribute('stroke', '#fff');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('data-month', monthIdx);
+    path.setAttribute('data-count', count);
+    path.setAttribute('data-month-name', MONTH_NAMES[monthIdx]);
+    path.style.cursor = 'pointer';
+    path.style.transition = 'opacity 0.2s';
+
+    // Highlight if selected
+    if(selectedMonth === monthIdx){
+      path.style.opacity = '1';
+      path.style.filter = 'brightness(1.2)';
+    } else {
+      path.style.opacity = selectedMonth === null ? '0.9' : '0.4';
+    }
+
+    // Hover effects
+    path.addEventListener('mouseenter', (e) => {
+      if(selectedMonth !== monthIdx){
+        path.style.opacity = '1';
+      }
+      showPieTooltip(e, MONTH_NAMES[monthIdx], count);
+    });
+
+    path.addEventListener('mouseleave', () => {
+      if(selectedMonth !== monthIdx){
+        path.style.opacity = selectedMonth === null ? '0.9' : '0.4';
+      }
+      hidePieTooltip();
+    });
+
+    path.addEventListener('mousemove', (e) => {
+      updatePieTooltipPosition(e);
+    });
+
+    // Click to filter
+    path.addEventListener('click', () => {
+      if(selectedMonth === monthIdx){
+        selectedMonth = null;
+      } else {
+        selectedMonth = monthIdx;
+      }
+      updateMonthlyPieChart();
+      renderAll();
+    });
+
+    svg.appendChild(path);
+    currentAngle = endAngle;
+  });
+}
+
+function showPieTooltip(e, monthName, count){
+  const tooltip = document.getElementById('pie-tooltip');
+  tooltip.textContent = `${monthName}: ${count}`;
+  tooltip.style.display = 'block';
+  updatePieTooltipPosition(e);
+}
+
+function updatePieTooltipPosition(e){
+  const tooltip = document.getElementById('pie-tooltip');
+  const wrapper = document.querySelector('.pie-chart-wrapper');
+  const rect = wrapper.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top = (y - 35) + 'px';
+}
+
+function hidePieTooltip(){
+  const tooltip = document.getElementById('pie-tooltip');
+  tooltip.style.display = 'none';
+}
+
+
 // ================== HEATMAP ==================
 let heatLayer = null; let heatMode = false;
 function buildHeat(){
-  const pts = filteredReal()
-    .map(r=> (isFinite(r.lat)&&isFinite(r.lng)) ? [r.lat, r.lng, 0.8] : null)
-    .filter(Boolean);
-  if(!heatLayer){ heatLayer = L.heatLayer(pts, { radius: 22, blur: 16, maxZoom: 17, minOpacity: 0.3 }); heatLayer.addTo(map); }
-  else { heatLayer.setLatLngs(pts); }
+  const crimes = filteredReal().filter(r=> isFinite(r.lat) && isFinite(r.lng));
+
+  if(crimes.length === 0){
+    if(heatLayer){ heatLayer.setLatLngs([]); }
+    return;
+  }
+
+  // Calculate spatial density using a grid-based approach
+  const gridSize = 0.01; // ~1km grid cells
+  const densityMap = new Map();
+
+  // Count crimes in each grid cell
+  crimes.forEach(r => {
+    const gridLat = Math.floor(r.lat / gridSize);
+    const gridLng = Math.floor(r.lng / gridSize);
+    const key = `${gridLat},${gridLng}`;
+    densityMap.set(key, (densityMap.get(key) || 0) + 1);
+  });
+
+  // Find max density for normalization
+  const maxDensity = Math.max(...densityMap.values());
+
+  // Assign intensity based on local density (0.1 to 1.0)
+  const pts = crimes.map(r => {
+    const gridLat = Math.floor(r.lat / gridSize);
+    const gridLng = Math.floor(r.lng / gridSize);
+    const key = `${gridLat},${gridLng}`;
+    const localDensity = densityMap.get(key) || 1;
+
+    // Normalize intensity: areas with more crimes get higher intensity
+    // Use square root to prevent over-saturation
+    const intensity = 0.1 + (0.9 * Math.sqrt(localDensity / maxDensity));
+
+    return [r.lat, r.lng, intensity];
+  });
+
+  if(!heatLayer){
+    heatLayer = L.heatLayer(pts, {
+      radius: 25,
+      blur: 20,
+      maxZoom: 17,
+      minOpacity: 0.2,
+      max: 1.0,  // Maximum intensity value
+      gradient: {  // Custom gradient for better visibility
+        0.0: 'blue',
+        0.3: 'cyan',
+        0.5: 'lime',
+        0.7: 'yellow',
+        0.9: 'orange',
+        1.0: 'red'
+      }
+    });
+    heatLayer.addTo(map);
+  } else {
+    heatLayer.setLatLngs(pts);
+  }
 }
-function enableHeat(){ heatMode=true; if(map.hasLayer(realCluster)) map.removeLayer(realCluster); if(map.hasLayer(userCluster)) map.removeLayer(userCluster); buildHeat(); }
-function disableHeat(){ heatMode=false; if(!map.hasLayer(realCluster)) map.addLayer(realCluster); if(!map.hasLayer(userCluster)) map.addLayer(userCluster); if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; } renderReal(); renderUsers(); }
+function enableHeat(){
+  heatMode=true;
+  // Hide real crime markers when heatmap is enabled
+  if(map.hasLayer(realCluster)) map.removeLayer(realCluster);
+  // Keep user reports visible
+  buildHeat();
+}
+function disableHeat(){
+  heatMode=false;
+  // Re-add real crime markers when heatmap is disabled
+  if(!map.hasLayer(realCluster)) map.addLayer(realCluster);
+  if(!map.hasLayer(userCluster)) map.addLayer(userCluster);
+  if(heatLayer){ map.removeLayer(heatLayer); heatLayer=null; }
+  renderReal();
+  renderUsers();
+}
 
 // ================== RENDER HELPERS ==================
-function updateStats(shown){ document.getElementById('filter-stats').textContent = `${shown} real / ${ALL_REAL.length} total`; }
+function updateStats(shown){ document.getElementById('filter-stats').textContent = `${shown} offences / ${ALL_REAL.length} total offences`; }
 function updateNoResults(){
   const anyFilter = NORMALIZE(document.getElementById('suburb-filter').value).length>0 || (document.getElementById('crime-filter').value||'');
   const realCount = filteredReal().length;
@@ -877,28 +1263,51 @@ function updateNoResults(){
 function renderAll(){
   // Heavy updates: show loader briefly
   showLoader('Applying filters…');
-  if(heatMode){ buildHeat(); } else { renderReal(); renderUsers(); }
-  updateNoResults();
-  hideLoader();
+  // Use requestAnimationFrame for smoother rendering
+  requestAnimationFrame(() => {
+    if(heatMode){ buildHeat(); } else { renderReal(); renderUsers(); }
+    updateNoResults();
+    updateWeekdayChart();
+    updateMonthlyPieChart();
+    hideLoader();
+  });
 }
 
 // ================== RENDER (uses polygon/centroid scatter defined earlier) ==================
 function renderReal(){
-  // Make sure the layer is attached
-  if(!map.hasLayer(realCluster)) map.addLayer(realCluster);
+  console.log('🔄 renderReal called');
+
+  // Make sure the layer is attached (unless in heatmap mode)
+  if(!heatMode && !map.hasLayer(realCluster)) map.addLayer(realCluster);
   realCluster.clearLayers();
   if(!realVisible){ updateStats(0); return; }
   const list=filteredReal();
   console.log(`renderReal: ${list.length} crimes passed filters out of ${ALL_REAL.length} total`);
   console.log('realVisible:', realVisible, 'heatMode:', heatMode);
-  let added=0;
 
+  // For large datasets, use chunked rendering for better performance
+  const CHUNK_SIZE = 500;
+  let added = 0;
+  const markers = [];
+  const seenKeys = new Set(); // Prevent duplicates
+  let coordsGenerated = 0; // Track newly generated coords
+
+  // Process all markers first (prepare data)
   list.forEach((r)=>{
+    // Create unique key to prevent duplicates
+    const crimeKey = `${r.crime_type}|${r.crime_time || r.iso_date}|${r.postcode}`;
+    if(seenKeys.has(crimeKey)) {
+      return; // Skip this duplicate silently (don't spam console)
+    }
+    seenKeys.add(crimeKey);
+
     let lat = r.lat;
     let lng = r.lng;
 
-    // Prefer seeded polygon placement when coordinates are missing
-    if(!isFinite(lat) || !isFinite(lng)){
+    // ONLY generate coordinates if they haven't been placed yet
+    // This prevents regenerating coordinates on every render
+    if(!r._placed && (!isFinite(lat) || !isFinite(lng))){
+      coordsGenerated++; // Track this for debugging
       const pc = (r.postcode||'').toString();
       const sig = `${r.crime_type||''}|${r.iso_date||r.crime_time||''}|${pc}`;
 
@@ -908,12 +1317,24 @@ function renderReal(){
         if(poly){
           const inner = getInnerPolygon(poly, pc);
           const pt = seededRandomPointInPolygon(inner, sig) || randomPointInPolygon(inner);
-          if(pt){ lat = pt.lat; lng = pt.lng; r._approx = true; }
+          if(pt){
+            lat = pt.lat;
+            lng = pt.lng;
+            r.lat = lat;
+            r.lng = lng;
+            r._approx = true;
+            r._placed = true; // Mark as placed to prevent regeneration
+          }
         }
       } else if(pc && !POLY_FETCH_INFLIGHT.has(`poa:${pc}`)){
-        // Fetch polygon asynchronously and re-render when loaded
+        // Fetch polygon asynchronously - but DON'T re-render immediately
+        // Instead, mark for background processing
         POLY_FETCH_INFLIGHT.add(`poa:${pc}`);
-        ensurePostcodePolygon(pc).then(()=>{ POLY_FETCH_INFLIGHT.delete(`poa:${pc}`); renderReal(); });
+        ensurePostcodePolygon(pc).then(()=>{
+          POLY_FETCH_INFLIGHT.delete(`poa:${pc}`);
+          // Don't trigger full re-render, just mark crimes for lazy update
+          // This prevents the cascade of re-renders
+        });
       }
 
       // If still missing, fallback to postcode centroid seeded jitter (deterministic)
@@ -921,30 +1342,59 @@ function renderReal(){
         const pcEntry = POSTCODE_COORDS_MAP[pc];
         if(pcEntry && isFinite(pcEntry.lat) && isFinite(pcEntry.lng)){
           const centerLat = pcEntry.lat, centerLng = pcEntry.lng;
-          const pt = jitterAround(centerLat, centerLng, sig, 400);
-          lat = pt.lat; lng = pt.lng; r._approx = true;
+          const pt = jitterAround(centerLat, centerLng, sig, 1000);
+          lat = pt.lat;
+          lng = pt.lng;
+          r.lat = lat;
+          r.lng = lng;
+          r._approx = true;
+          r._placed = true; // Mark as placed
         }
       }
 
-      // Persist approximate coords so suburb resolution can run (background + click)
-      if(isFinite(lat) && isFinite(lng)){
-        r.lat = lat; r.lng = lng;
-      } else {
+      // Skip if we couldn't generate coordinates
+      if(!isFinite(lat) || !isFinite(lng)){
         return; // unrecoverable: skip
       }
     }
 
-    if(inQld(lat, lng)){
+    // Use the cached coordinates (either original or generated)
+    if(isFinite(lat) && isFinite(lng) && inQld(lat, lng)){
       const m=L.marker([lat,lng],{icon:redIcon});
+      r._marker = m;
       m.bindPopup(popupHtmlReal(r));
       m.on('popupopen', ()=>{ priorityResolveCrime(r, m); });
-      realCluster.addLayer(m);
+      markers.push(m);
       added++;
     }
   });
 
-  console.log(`Added ${added} real crime markers to map out of ${list.length} filtered`);
-  updateStats(added);
+  // Add markers in chunks for better performance
+  function addMarkersInChunks(startIdx){
+    const endIdx = Math.min(startIdx + CHUNK_SIZE, markers.length);
+    const chunk = markers.slice(startIdx, endIdx);
+
+    realCluster.addLayers(chunk);
+
+    if(endIdx < markers.length){
+      // Schedule next chunk
+      requestAnimationFrame(() => addMarkersInChunks(endIdx));
+    } else {
+      console.log(`Added ${added} real crime markers to map out of ${list.length} filtered`);
+      updateStats(added);
+    }
+  }
+
+  if(markers.length > 0){
+    addMarkersInChunks(0);
+  } else {
+    updateStats(0);
+  }
+
+  // Log coordinate generation for debugging
+  if(coordsGenerated > 0){
+    console.warn(`⚠️ Generated coordinates for ${coordsGenerated} crimes during render (should be 0 after initial load)`);
+  }
 }
 function renderUsers(){
   userCluster.clearLayers();
@@ -952,6 +1402,130 @@ function renderUsers(){
   filteredUsers().forEach(r=>{
     if(r.lat&&r.lng){ const m=L.marker([r.lat,r.lng],{icon:blueIcon}); m.bindPopup(popupHtmlUser(r)); userCluster.addLayer(m); }
   });
+}
+
+// ================== DATASETS FOR SUGGESTIONS ==================
+let SUGGEST_INDEX = null; // Fuse instance
+let SUGGEST_DATA = [];    // {label, postcode, suburb}
+function buildSuggestions(){
+  const seen = new Set();
+  SUGGEST_DATA = [];
+  // from postcode dataset
+  Object.entries(POSTCODE_COORDS_MAP||{}).forEach(([pc, obj])=>{
+    const label = obj.suburb ? `${obj.suburb} (${pc})` : pc;
+    const key = `${obj.suburb||''}|${pc}`.toLowerCase();
+    if(!seen.has(key)){
+      SUGGEST_DATA.push({ label, postcode: pc, suburb: obj.suburb||'' });
+      seen.add(key);
+    }
+  });
+  // Also include resolved suburbs appearing in data
+  (ALL_REAL||[]).forEach(r=>{
+    const pc = (r.postcode||'').toString();
+    const sub = (r._resolvedSuburb || r.suburb || '').trim();
+    // Skip if suburb is still resolving
+    if(sub && sub.toLowerCase() !== 'resolving...' && sub.toLowerCase() !== 'resolving' && pc){
+      const key = `${sub}|${pc}`.toLowerCase();
+      if(!seen.has(key)){
+        const label = sub ? `${sub}${pc?` (${pc})`:''}` : pc;
+        SUGGEST_DATA.push({ label, postcode: pc, suburb: sub });
+        seen.add(key);
+      }
+    }
+  });
+  SUGGEST_INDEX = new Fuse(SUGGEST_DATA, { keys:['label','postcode','suburb'], threshold:0.4, ignoreLocation:true });
+}
+
+function showSuggestions(query){
+  const box = document.getElementById('suburb-suggestions');
+  if(!box) return;
+  box.innerHTML = '';
+  if(!SUGGEST_INDEX || !query){ box.style.display='none'; return; }
+  const results = SUGGEST_INDEX.search(query).slice(0, 10);
+  if(results.length === 0){ box.style.display='none'; return; }
+  results.forEach(res=>{
+    const item = document.createElement('div');
+    item.className = 'suggestion-item';
+    item.textContent = res.item.label;
+    item.onclick = ()=>{
+      document.getElementById('suburb-filter').value = res.item.postcode || res.item.suburb || '';
+      box.style.display = 'none';
+      renderAll();
+    };
+    box.appendChild(item);
+  });
+  box.style.display = 'block';
+}
+function hideSuggestions(){ const box=document.getElementById('suburb-suggestions'); if(box){ box.style.display='none'; } }
+
+
+// ================== MAP INITIALIZATION ==================
+let map = L.map('map').setView([-27.4698, 153.0251], 12); // Brisbane center
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: 'Map data © OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(map);
+
+// Create marker icons that look exactly like Leaflet's default marker
+function createLeafletStyleMarker(color) {
+  const svgTemplate = `
+    <svg width="25" height="41" viewBox="0 0 25 41" xmlns="http://www.w3.org/2000/svg">
+      <path fill="${color}" stroke="#FFF" stroke-width="1.5"
+            d="M12.5,0 C19.4,0 25,5.6 25,12.5 C25,19.4 12.5,41 12.5,41 S0,19.4 0,12.5 C0,5.6 5.6,0 12.5,0 z"/>
+    </svg>
+  `;
+  return 'data:image/svg+xml;base64,' + btoa(svgTemplate);
+}
+
+// Marker icons - same style as the default click marker
+const redIcon = L.icon({
+  iconUrl: createLeafletStyleMarker('#d63e2a'),
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+const blueIcon = L.icon({
+  iconUrl: createLeafletStyleMarker('#2a81d6'),
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41]
+});
+
+// Marker clusters
+const realCluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 50 });
+const userCluster = L.markerClusterGroup({ chunkedLoading: true, maxClusterRadius: 40 });
+map.addLayer(realCluster);
+map.addLayer(userCluster);
+
+// Click marker for user submissions
+let clickMarker = null;
+let clickedAddress = '';
+
+// Layer visibility flags
+let realVisible = true;
+let userVisible = true;
+
+// Global datasets
+let ALL_REAL = [];
+let USER_REPORTS = [];
+
+// Track loading state
+let crimeDataLoaded = false;
+let postcodeDataLoaded = false;
+
+// Initialize coordinates once both datasets are ready
+function checkAndInitialize(){
+  if(crimeDataLoaded && postcodeDataLoaded && ALL_REAL.length > 0){
+    initializeCrimeCoordinates();
+    renderReal();
+    updateWeekdayChart();
+    updateMonthlyPieChart();
+  }
 }
 
 // ================== DATA LOAD & POSTCODE COORDS ==================
@@ -1039,7 +1613,12 @@ function loadReal(){
           crime_type: r.crime_type
         })));
       }
-      renderReal();
+
+      // Mark crime data as loaded
+      crimeDataLoaded = true;
+
+      // Check if we can initialize coordinates
+      checkAndInitialize();
 
       // Hide loader after initial crimes rendered
       hideLoader();
@@ -1075,6 +1654,58 @@ loadReal();
 
 // ========= Load postcode coordinates map via Flask static URL =========
 let POSTCODE_COORDS_MAP = {};
+
+// Initialize coordinates for all crimes (call once after postcode data loads)
+function initializeCrimeCoordinates(){
+  console.log('Initializing coordinates for all crimes...');
+  let initialized = 0;
+
+  ALL_REAL.forEach(r => {
+    // Skip if already has valid coordinates
+    if(r._placed || (isFinite(r.lat) && isFinite(r.lng) && inQld(r.lat, r.lng))){
+      r._placed = true;
+      return;
+    }
+
+    const pc = (r.postcode||'').toString();
+    if(!pc) return;
+
+    const sig = `${r.crime_type||''}|${r.iso_date||r.crime_time||''}|${pc}`;
+
+    // Try polygon-based placement first
+    if(POSTCODE_POLY_CACHE.has(pc)){
+      const poly = POSTCODE_POLY_CACHE.get(pc);
+      if(poly){
+        const inner = getInnerPolygon(poly, pc);
+        const pt = seededRandomPointInPolygon(inner, sig) || randomPointInPolygon(inner);
+        if(pt && inQld(pt.lat, pt.lng)){
+          r.lat = pt.lat;
+          r.lng = pt.lng;
+          r._approx = true;
+          r._placed = true;
+          initialized++;
+          return;
+        }
+      }
+    }
+
+    // Fallback to centroid jitter
+    const pcEntry = POSTCODE_COORDS_MAP[pc];
+    if(pcEntry && isFinite(pcEntry.lat) && isFinite(pcEntry.lng)){
+      const pt = jitterAround(pcEntry.lat, pcEntry.lng, sig, 1000);
+      if(inQld(pt.lat, pt.lng)){
+        r.lat = pt.lat;
+        r.lng = pt.lng;
+        r._approx = true;
+        r._placed = true;
+        initialized++;
+      }
+    }
+  });
+
+  console.log(`Initialized coordinates for ${initialized} crimes`);
+}
+
 fetch('{{ url_for("static", filename="qld_postcodes_data.json") }}')
   .then(r => r.ok ? r.json() : [])
   .then(data => {
@@ -1089,7 +1720,13 @@ fetch('{{ url_for("static", filename="qld_postcodes_data.json") }}')
         }
       });
       console.log(`Loaded ${Object.keys(POSTCODE_COORDS_MAP).length} postcode coordinates`);
-      if(Array.isArray(ALL_REAL) && ALL_REAL.length){ renderReal(); }
+
+      // Mark postcode data as loaded
+      postcodeDataLoaded = true;
+
+      // Check if we can initialize coordinates
+      checkAndInitialize();
+
       // Build suggestions after coords ready
       tryBuildSuggestions();
     }
@@ -1112,23 +1749,17 @@ function loadUserStats(){
 loadUserStats();
 
 // ================== EVENTS ==================
+// Setup weekday chart interactivity
+setupWeekdayChart();
+
 document.getElementById('suburb-filter').addEventListener('input', (e)=>{ showSuggestions(e.target.value); renderAll(); });
 document.getElementById('suburb-filter').addEventListener('blur', ()=> setTimeout(hideSuggestions, 150));
 document.getElementById('crime-filter').addEventListener('change', renderAll);
 
 document.getElementById('time-range').addEventListener('change', function(){
-  if(this.value === 'all') {
-    if(!confirm('Loading all data may take time and impact performance. Proceed?')) {
-      this.value = this.dataset.prev || '90';
-      return;
-    }
-  }
   this.dataset.prev = this.value;
-  showLoader('Applying date range…');
-  if(heatMode){ buildHeat(); } else { renderReal(); renderUsers(); }
+  renderAll();
   initializeResolutionQueue();
-  updateNoResults();
-  hideLoader();
 });
 document.getElementById('time-range').dataset.prev = '30';
 document.getElementById('clear-suburb-filter').addEventListener('click',()=>{ document.getElementById('suburb-filter').value=''; hideSuggestions(); renderAll(); });
@@ -1197,6 +1828,19 @@ document.getElementById('find-address').onclick = ()=>{ const addr=document.getE
   });
 })();
 
+// Beta notice dismissal
+(function(){
+  const betaBox = document.getElementById('beta-notice');
+  const betaKey = 'crimeMapBetaNoticeDismissed';
+  if(!sessionStorage.getItem(betaKey)){
+    betaBox.style.display = 'flex';
+  }
+  document.getElementById('dismiss-beta').addEventListener('click', ()=>{
+    sessionStorage.setItem(betaKey, '1');
+    betaBox.style.display = 'none';
+  });
+})();
+
 // ================== ERROR HANDLING & BUG REPORT ==================
 function showErrorModal(){
   document.getElementById('error-modal').style.display = 'flex';
@@ -1235,5 +1879,103 @@ window.addEventListener('unhandledrejection', function(event){
 
 // ================== START BATCH SAVE SCHEDULER ==================
 scheduleBatchSave();
+
+// ================== SOUND EFFECTS ==================
+const soundEffects = {
+    mapClick: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(600, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.1);
+    },
+    markerClick: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        osc.frequency.setValueAtTime(1000, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.15);
+    },
+    filterChange: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.setValueAtTime(500, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.1);
+    },
+    buttonHover: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(350, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+    },
+    notification: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.2);
+    }
+};
+
+// Add sound to map clicks
+map.on('click', () => soundEffects.mapClick());
+
+// Add sound to filter changes
+document.getElementById('time-range').addEventListener('change', () => soundEffects.filterChange());
+document.getElementById('crime-filter').addEventListener('change', () => soundEffects.filterChange());
+document.getElementById('toggle-heat').addEventListener('change', () => soundEffects.filterChange());
+
+// Add hover sounds to buttons
+document.querySelectorAll('button, .bar-row').forEach(el => {
+    el.addEventListener('mouseenter', () => soundEffects.buttonHover());
+});
+
+// Add click sound to chart interactions
+document.getElementById('weekday-chart').addEventListener('click', () => soundEffects.markerClick());
+
+// Override marker popup open to add sound
+const originalRenderReal = renderReal;
+renderReal = function() {
+    originalRenderReal();
+    realCluster.eachLayer(marker => {
+        marker.off('popupopen');
+        marker.on('popupopen', (e) => {
+            soundEffects.markerClick();
+            const r = ALL_REAL.find(crime => crime._marker === marker);
+            if(r) priorityResolveCrime(r, marker);
+        });
+    });
+};
+
 </script>
 {% endblock %}

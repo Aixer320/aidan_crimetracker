@@ -2,85 +2,298 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Aidan's Crime Tracker</title>
-    <link rel="stylesheet" href="https://www.w3schools.com/w3css/5/w3.css">
-
+    <title>Aidan's Crime Tracker - Welcome</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-        margin: 0;
-        height: 100vh;
-        font-family: Arial, sans-serif;
-        background: #f4f4f4;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        position: relative;
-    }
-        .title {
+            margin: 0;
+            height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Animated background particles */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 20s infinite ease-in-out;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-100px) translateX(50px); opacity: 0.8; }
+        }
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 60px; height: 60px; left: 80%; animation-delay: 2s; }
+        .particle:nth-child(3) { width: 100px; height: 100px; left: 50%; animation-delay: 4s; }
+        .particle:nth-child(4) { width: 40px; height: 40px; left: 30%; animation-delay: 6s; }
+        .particle:nth-child(5) { width: 70px; height: 70px; left: 70%; animation-delay: 8s; }
+
+        .container {
+            position: relative;
+            z-index: 1;
             text-align: center;
-            font-size: 2em;
-            font-weight: bold;
+            max-width: 600px;
+            padding: 20px;
         }
-        .center-buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        align-items: center;
-    }
-        .top-right {
-            position: absolute;
-            top: 20px;
-            right: 30px;
-            font-size: 1em;
+        .logo-section {
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
         }
-        .bottom-right {
-            position: absolute;
-            bottom: 20px;
-            right: 30px;
-            font-size: 0.9em;
-            color: #888;
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
         }
-        .bottom-left {
-            position: absolute;
-            bottom: 20px;
-            left: 30px;
+        .shield-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
         }
-        button {
-            padding: 12px 32px;
-            font-size: 1em;
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .title {
+            font-size: 48px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 12px;
+            letter-spacing: -1px;
+            text-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+        }
+        .subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+        .beta-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            color: white;
+            font-weight: 600;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        .buttons-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-top: 48px;
+            animation: fadeInUp 0.8s ease 0.2s both;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .btn {
+            padding: 18px 36px;
+            font-size: 16px;
+            font-weight: 600;
             border: none;
-            border-radius: 6px;
-            background: #1976d2;
-            color: #fff;
+            border-radius: 12px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-family: inherit;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
         }
-        button:hover {
-            background: #1565c0;
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+        }
+        .btn-admin {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            border: none;
+        }
+        .btn-admin:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(245, 87, 108, 0.4);
+        }
+        .divider {
+            margin: 24px 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .status-card {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 12px 20px;
+            border-radius: 12px;
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 10;
+        }
+        .logout-btn {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            font-size: 14px;
+            z-index: 10;
+        }
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+        }
+        .version-tag {
+            position: absolute;
+            bottom: 30px;
+            right: 30px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+            font-weight: 500;
+            z-index: 10;
         }
     </style>
 </head>
 <body>
-    <div class="top-right" id="signin-status">
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <div class="status-card">
         {% if session.get('admin') %}
-            Admin: {{ session.get('admin') }}
+            🔐 Admin: {{ session.get('admin') }}
         {% elif session.get('user') %}
-            User: {{ session.get('user') }}
+            👤 User: {{ session.get('user') }}
         {% else %}
-            not signed in
+            Not signed in
         {% endif %}
     </div>
-    <div class="center-buttons">
-        <div class="title">Aidan&#39;s Crime Tracker</div>
-        <a class="w3-button w3-blue w3-round" href="{{ url_for('user_register') }}">User Register</a>
-        <a class="w3-button w3-blue w3-round" href="{{ url_for('user_login') }}">User Login</a>
-        <a class="w3-button w3-blue w3-round" href="{{ url_for('admin_register') }}">Admin Register</a>
-        <a class="w3-button w3-blue w3-round" href="{{ url_for('admin_login') }}">Admin Login</a>
+
+    <div class="container">
+        <div class="logo-section">
+            <div class="shield-icon">🛡️</div>
+            <h1 class="title">Aidan's Crime Tracker</h1>
+            <p class="subtitle">Real-time crime monitoring and reporting for Queensland</p>
+            <span class="beta-badge">BETA VERSION</span>
+        </div>
+
+        <div class="buttons-container">
+            <a class="btn btn-primary" href="{{ url_for('user_login') }}">
+                <span>👤</span> User Login
+            </a>
+            <a class="btn btn-secondary" href="{{ url_for('user_register') }}">
+                <span>📝</span> User Register
+            </a>
+
+            <div class="divider">Admin Access</div>
+
+            <a class="btn btn-admin" href="{{ url_for('admin_login') }}">
+                <span>🔐</span> Admin Login
+            </a>
+            <a class="btn btn-secondary" href="{{ url_for('admin_register') }}">
+                <span>⚙️</span> Admin Register
+            </a>
+        </div>
     </div>
-    <div class="bottom-left">
-        <a class="w3-button w3-blue w3-round" href="{{ url_for('logout') }}">Logout</a>
-    </div>
-    <div class="bottom-right">Version Control: 1.0</div>
+
+    <a class="logout-btn" href="{{ url_for('logout') }}">🚪 Logout</a>
+    <div class="version-tag">✨ Version Control: 2.3 (Beta)</div>
+
+    <script>
+    // Sound Effects System
+    const sounds = {
+        click: () => {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(600, audioContext.currentTime + 0.05);
+            gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.1);
+        },
+        hover: () => {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.05);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.05);
+        }
+    };
+
+    // Add click and hover sounds to all buttons and links
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.btn, a, button').forEach(el => {
+            el.addEventListener('click', () => sounds.click());
+            el.addEventListener('mouseenter', () => sounds.hover());
+        });
+    });
+    </script>
 </body>
 </html>

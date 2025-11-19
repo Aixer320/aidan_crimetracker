@@ -7,73 +7,486 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <style>
-  #map-container { width: 70vw; margin: 0 auto; }
-  #map { height: 600px; width: 100%; margin-bottom: 10px; }
-  .form-section { max-width: 400px; margin: 0 auto; }
-  #address-bar { display: flex; gap: 8px; margin-bottom: 10px; }
-  #clicked-address { margin-bottom: 10px; color: #1976d2; font-weight: bold; }
-  table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-  th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
-  th { background: #f0f0f0; }
-  .signed-as { width:70vw; margin:8px auto 4px; color:#374151; font-weight:600; }
-  .admin-tools { width:70vw; margin:8px auto 12px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:10px 12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-  .admin-tools form { display:flex; align-items:center; gap:8px; }
-  .admin-tools label { margin:0; }
-  .admin-tools input[type="date"], .admin-tools input[type="file"], .admin-tools select { padding:6px 8px; border:1px solid #cbd5e1; border-radius:6px; }
-  .admin-tools button { padding:7px 12px; border:0; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; }
-  .bulk-bar { width:70vw; margin:12px auto; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px 14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap; box-shadow:0 1px 2px rgba(0,0,0,0.05); }
-  .bulk-bar label { margin:0; font-weight:500; color:#374151; display:flex; align-items:center; gap:6px; cursor:pointer; }
-  .bulk-bar input[type="checkbox"] { width:18px; height:18px; cursor:pointer; accent-color:#2563eb; }
-  .bulk-bar select { padding:8px 10px; border:1px solid #cbd5e1; border-radius:6px; background:#fff; color:#374151; font-size:14px; cursor:pointer; min-width:150px; }
-  .bulk-bar button { padding:8px 14px; border:0; border-radius:6px; background:#2563eb; color:#fff; cursor:pointer; font-weight:500; transition:background 0.2s; }
-  .bulk-bar button:hover { background:#1d4ed8; }
-  .bulk-bar button:disabled { background:#cbd5e1; cursor:not-allowed; }
-  .user-stats-box { width:70vw; margin:8px auto 12px; background:#f0f9ff; border:1px solid #bfdbfe; border-radius:8px; padding:14px 16px; display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:16px; }
-  .stat-item { display:flex; flex-direction:column; align-items:center; justify-content:center; }
-  .stat-label { font-size:12px; color:#475569; font-weight:500; margin-bottom:6px; }
-  .stat-value { font-size:24px; font-weight:700; color:#0284c7; }
+  /* Container Styles */
+  #map-container {
+    width: 90%;
+    max-width: 1400px;
+    margin: 20px auto;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+  #map {
+    height: 600px;
+    width: 100%;
+    margin-bottom: 10px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  }
 
-  /* Error Modal */
-  .error-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:none; align-items:center; justify-content:center; z-index:10000; }
-  .error-modal-content { background:#fff; padding:30px; border-radius:12px; max-width:500px; text-align:center; box-shadow:0 10px 40px rgba(0,0,0,0.3); }
-  .error-modal-content h2 { color:#dc2626; margin-bottom:20px; font-size:24px; }
-  .error-modal-content p { color:#374151; line-height:1.6; margin-bottom:20px; font-size:16px; }
-  .error-modal-content .email { color:#2563eb; font-weight:600; font-size:18px; margin:15px 0; }
-  .error-modal-content button { background:#2563eb; color:#fff; border:none; padding:12px 24px; border-radius:6px; cursor:pointer; font-size:16px; font-weight:600; }
-  .error-modal-content button:hover { background:#1d4ed8; }
+  .form-section {
+    max-width: 500px;
+    margin: 24px auto;
+    background: rgba(255, 255, 255, 0.95);
+    padding: 28px;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
+
+  #address-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  #address-bar input {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 15px;
+    transition: all 0.3s ease;
+  }
+
+  #address-bar input:focus {
+    outline: none;
+    border-color: #f5576c;
+    box-shadow: 0 0 0 3px rgba(245, 87, 108, 0.1);
+  }
+
+  #address-bar button {
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+  }
+
+  #address-bar button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+  }
+
+  #clicked-address {
+    margin-bottom: 16px;
+    color: #f5576c;
+    font-weight: 600;
+    font-size: 15px;
+  }
+
+  /* Table Styles */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+  th, td {
+    border: 1px solid #e5e7eb;
+    padding: 12px 16px;
+    text-align: left;
+  }
+  th {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    font-weight: 700;
+    color: #1f2937;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+
+  tr:hover {
+    background: #f9fafb;
+  }
+
+  /* Header Styles */
+  .signed-as {
+    width: 90%;
+    max-width: 1400px;
+    margin: 16px auto 8px;
+    color: #1f2937;
+    font-weight: 700;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .signed-as::before {
+    content: '🔐';
+    font-size: 20px;
+  }
+
+  /* Admin Tools Panel */
+  .admin-tools {
+    width: 90%;
+    max-width: 1400px;
+    margin: 16px auto;
+    background: linear-gradient(135deg, #fef3c7 0%, #fce7f3 100%);
+    border: 2px solid #fde68a;
+    border-radius: 16px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .admin-tools form {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .admin-tools label {
+    margin: 0;
+    font-weight: 600;
+    color: #78350f;
+    font-size: 14px;
+  }
+
+  .admin-tools input[type="date"],
+  .admin-tools input[type="file"],
+  .admin-tools select {
+    padding: 10px 12px;
+    border: 2px solid #fbbf24;
+    border-radius: 8px;
+    background: white;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  .admin-tools input:focus,
+  .admin-tools select:focus {
+    outline: none;
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+  }
+
+  .admin-tools button {
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+  }
+
+  .admin-tools button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+  }
+
+  /* Bulk Actions Bar */
+  .bulk-bar {
+    width: 90%;
+    max-width: 1400px;
+    margin: 20px auto;
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .bulk-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .bulk-left label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+  }
+
+  .bulk-left input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    accent-color: #f5576c;
+    cursor: pointer;
+  }
+
+  .bulk-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .bulk-action label {
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+  }
+
+  .bulk-action select {
+    padding: 10px 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    min-width: 180px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.3s ease;
+  }
+
+  .bulk-action select:focus {
+    outline: none;
+    border-color: #f5576c;
+    box-shadow: 0 0 0 3px rgba(245, 87, 108, 0.1);
+  }
+
+  .bulk-bar button {
+    padding: 10px 20px;
+    border: 0;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: #fff;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(245, 87, 108, 0.3);
+  }
+
+  .bulk-bar button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(245, 87, 108, 0.4);
+  }
+
+  /* Stats Box */
+  .user-stats-box {
+    width: 90%;
+    max-width: 1400px;
+    margin: 16px auto;
+    background: linear-gradient(135deg, #dbeafe 0%, #e0e7ff 100%);
+    border: 2px solid #93c5fd;
+    border-radius: 16px;
+    padding: 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 24px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+  }
+
+  .stat-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-label {
+    font-size: 13px;
+    color: #475569;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .stat-value {
+    font-size: 36px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Modal Styles */
+  .error-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+  }
+
+  .error-modal-content {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalSlideIn 0.3s ease;
+  }
+
+  @keyframes modalSlideIn {
+    from { opacity: 0; transform: scale(0.9) translateY(-20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .error-modal-content h2 {
+    color: #dc2626;
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+
+  .error-modal-content p {
+    color: #4b5563;
+    line-height: 1.6;
+    margin-bottom: 24px;
+  }
+
+  .error-modal-content button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .error-modal-content button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(102, 126, 234, 0.4);
+  }
 
   /* Bug Report Button */
-  .bug-report-btn { position:fixed; bottom:20px; right:20px; background:#dc2626; color:#fff; border:none; padding:12px 20px; border-radius:8px; cursor:pointer; font-size:14px; font-weight:600; box-shadow:0 4px 12px rgba(220,38,38,0.4); z-index:1000; transition:all 0.3s; }
-  .bug-report-btn:hover { background:#b91c1c; box-shadow:0 6px 16px rgba(220,38,38,0.6); transform:translateY(-2px); }
+  .bug-report-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    color: #fff;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 700;
+    box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+    z-index: 1000;
+    transition: all 0.3s ease;
+  }
+
+  .bug-report-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(220, 38, 38, 0.5);
+  }
+
+  /* Form styling */
+  .form-section h3 {
+    color: #1f2937;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+
+  .form-section label {
+    display: block;
+    margin-bottom: 16px;
+    font-weight: 600;
+    color: #374151;
+    font-size: 14px;
+  }
+
+  .form-section select,
+  .form-section input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e5e7eb;
+    border-radius: 10px;
+    margin-top: 6px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  .form-section select:focus,
+  .form-section input:focus {
+    outline: none;
+    border-color: #f5576c;
+    box-shadow: 0 0 0 3px rgba(245, 87, 108, 0.1);
+  }
+
+  .form-section button[type="submit"] {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 20px;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(245, 87, 108, 0.4);
+  }
+
+  .form-section button[type="submit"]:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(245, 87, 108, 0.5);
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Error Modal -->
-<div id="error-modal" class="error-modal">
+<div id="error-modal" class="error-modal" style="display:none;">
   <div class="error-modal-content">
     <h2>🐛 Hey, you found an error / bug!</h2>
-    <p>Please immediately contact the creator to fix it. The creator will send a new version to you immediately.</p>
-    <div class="email">aixerstays@gmail.com</div>
+    <p>Please immediately contact the creator at <b>aixerstays@gmail.com</b>.</p>
     <button type="button" id="close-error-modal">Close</button>
   </div>
 </div>
-
-<!-- Bug Report Button -->
 <button type="button" id="bug-report-btn" class="bug-report-btn">🐛 Report Bug</button>
 
 <div class="signed-as">Signed in as: {{ username }}</div>
-<div class="user-stats-box">
+<div class="user-stats-box" id="admin-stats">
   <div class="stat-item">
-    <div class="stat-label">Your Reports</div>
+    <div class="stat-label">Total Reports (all users)</div>
     <div class="stat-value" id="stat-total">0</div>
   </div>
   <div class="stat-item">
-    <div class="stat-label">Pending</div>
+    <div class="stat-label">Pending Reports</div>
     <div class="stat-value" id="stat-pending">0</div>
   </div>
   <div class="stat-item">
-    <div class="stat-label">Approved</div>
+    <div class="stat-label">Approved Reports</div>
     <div class="stat-value" id="stat-approved">0</div>
   </div>
 </div>
@@ -105,11 +518,52 @@
   <div id="map"></div>
   <div id="map-error" style="color: red; display: none;">You must click inside Queensland.</div>
 </div>
-<div class="bulk-bar">
-  <div style="display:flex; align-items:center; gap:10px;">
-    <label for="select-all">Select all <input type="checkbox" id="select-all"></label>
+
+<!-- Admin Crime Report Form (auto-approved, AJAX) -->
+<form id="crime-form" class="form-section" method="post" action="{{ url_for('submit_crime') }}" style="max-width:420px; margin:22px auto;">
+  <h3 style="margin-bottom:12px; color:#1f2937;">Submit Crime Report (Admin)</h3>
+  <label>Type of Crime:
+    <select name="crime_type" id="crime_type" required>
+      <option value="">Select...</option>
+      <option>Assault</option>
+      <option>Robbery</option>
+      <option>Other Offences Against the Person</option>
+      <option>Unlawful Entry</option>
+      <option>Other Property Damage</option>
+      <option>Unlawful Use of Motor Vehicle</option>
+      <option>Other Theft (excl. Unlawful Entry)</option>
+      <option>Fraud</option>
+      <option>Handling Stolen Goods</option>
+      <option>Drug Offences</option>
+      <option>Liquor</option>
+      <option>Trespassing & Vagrancy</option>
+      <option>Weapons Act Offences</option>
+      <option>Good Order Offences</option>
+      <option>Traffic & Related Offences</option>
+      <option>Miscellaneous Offences</option>
+      <option>Other/Unsure</option>
+    </select>
+  </label>
+  <div class="comment-row" id="comment-row" style="margin-top:10px; display:none;">
+    <input type="text" name="comment" id="comment" maxlength="140" placeholder="Add a brief comment (max 10 words)" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:6px;" />
   </div>
-  <div style="display:flex; align-items:center; gap:8px;">
+  <label>Time of Crime:
+    <input type="datetime-local" name="crime_time" id="crime_time" required>
+  </label>
+  <input type="hidden" name="lat" id="lat">
+  <input type="hidden" name="lng" id="lng">
+  <input type="hidden" name="address" id="hidden-address">
+  <input type="hidden" name="admin_submit" value="true">
+  <button type="submit" style="width:100%; padding:10px; background:#2563eb; color:#fff; border:0; border-radius:6px; cursor:pointer; font-size:16px; font-weight:600;">Submit Report (Auto-Approved)</button>
+  <div id="submit-msg" style="margin-top:8px; font-size:13px; color:#065f46; display:none;">Submitted.</div>
+</form>
+
+<h3 style="width:70vw; margin:16px auto 8px;">Crime Report Log</h3>
+<div class="bulk-bar">
+  <div class="bulk-left">
+    <label for="select-all"><span>Select all</span> <input type="checkbox" id="select-all"></label>
+  </div>
+  <div class="bulk-action">
     <label for="bulk-action" style="margin:0; font-weight:500; color:#374151;">Action:</label>
     <select id="bulk-action">
       <option value="">— Choose action —</option>
@@ -120,7 +574,7 @@
   </div>
   <button type="button" id="apply-bulk">Apply</button>
 </div>
-<h3>Crime Report Log</h3>
+<div style="width:70vw; margin:0 auto;">
 <table id="report-log">
   <thead>
     <tr>
@@ -136,6 +590,7 @@
   </thead>
   <tbody></tbody>
 </table>
+</div>
 <script>
 const QLD = { minLat: -29.5, maxLat: -9.0, minLng: 137.995, maxLng: 154.0 };
 function inQld(lat, lng) { return lat >= QLD.minLat && lat <= QLD.maxLat && lng >= QLD.minLng && lng <= QLD.maxLng; }
@@ -145,51 +600,65 @@ const cluster = L.markerClusterGroup({ chunkedLoading:true, maxClusterRadius: 50
 map.addLayer(cluster);
 let marker; let clickedAddress = '';
 
-// Show all reports as clustered markers (pending and approved)
-fetch('/api/admin_reports').then(r => r.json()).then(reports => {
-  cluster.clearLayers();
-  reports.forEach(rep => {
-    if (rep.lat && rep.lng) {
-      // Extract display name from submitted_by (handle ANON: prefix)
-      let displayName = rep.submitted_by || 'Unknown';
-      if(displayName.startsWith('ANON:')) { displayName = 'Anonymous'; }
+// Load global admin stats
+function loadAdminStats(){
+  fetch('/api/admin_stats')
+    .then(r=> r.ok ? r.json() : {total_reports:0,pending:0,approved:0})
+    .then(s=>{
+      document.getElementById('stat-total').textContent = s.total_reports || 0;
+      document.getElementById('stat-pending').textContent = s.pending || 0;
+      document.getElementById('stat-approved').textContent = s.approved || 0;
+    })
+    .catch(()=>{});
+}
+loadAdminStats();
 
-      let popup = `<b>${rep.crime_type}</b><br>${rep.address || ''}<br>${rep.crime_time}<br><b>Submitted by:</b> ${displayName}<br>Status: ${rep.status}`;
-      if (rep.status === 'PENDING') {
-        popup += `<br><button onclick=\"approveReport(${rep.id})\">Approve</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
-      } else if (rep.status === 'APPROVED') {
-        popup += `<br><button onclick=\"disapproveReport(${rep.id})\">Disapprove</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
-      } else if (rep.status === 'DISAPPROVED') {
-        popup += `<br><button onclick=\"approveReport(${rep.id})\">Approve</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
-      } else {
-        popup += `<br><button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+// Show all reports as clustered markers (pending and approved)
+function loadAdminReports(){
+  fetch('/api/admin_reports').then(r => r.json()).then(reports => {
+    cluster.clearLayers();
+    reports.forEach(rep => {
+      if (rep.lat && rep.lng) {
+        let displayName = rep.submitted_by || 'Unknown';
+        if(displayName.startsWith('ANON:')) { displayName = 'Anonymous'; }
+        let popup = `<b>${rep.crime_type}</b><br>${rep.address || ''}<br>${rep.crime_time}<br><b>Submitted by:</b> ${displayName}<br>Status: ${rep.status}`;
+        if (rep.status === 'PENDING') {
+          popup += `<br><button onclick=\"approveReport(${rep.id})\">Approve</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+        } else if (rep.status === 'APPROVED') {
+          popup += `<br><button onclick=\"disapproveReport(${rep.id})\">Disapprove</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+        } else if (rep.status === 'DISAPPROVED') {
+          popup += `<br><button onclick=\"approveReport(${rep.id})\">Approve</button> <button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+        } else {
+          popup += `<br><button onclick=\"deleteReport(${rep.id})\">Delete</button>`;
+        }
+        const m = L.marker([rep.lat, rep.lng]);
+        m.bindPopup(popup);
+        cluster.addLayer(m);
       }
-      const m = L.marker([rep.lat, rep.lng]);
-      m.bindPopup(popup);
-      cluster.addLayer(m);
-    }
+    });
+    // Fill log table with checkboxes
+    const tbody = document.querySelector('#report-log tbody');
+    tbody.innerHTML = '';
+    reports.forEach(rep => {
+      let submitter = rep.submitted_by || 'Unknown';
+      if(submitter.startsWith('ANON:')) { submitter = 'Anonymous'; }
+      tbody.innerHTML += `<tr>
+        <td><input type=\"checkbox\" class=\"row-select\" data-id=\"${rep.id}\"></td>
+        <td>${rep.id}</td>
+        <td>${rep.crime_type}</td>
+        <td>${rep.crime_time}</td>
+        <td>${rep.address || ''}</td>
+        <td>${submitter}</td>
+        <td>${rep.status}</td>
+        <td>` +
+        (rep.status === 'PENDING' ? `<button onclick=\"approveReport(${rep.id})\">Approve</button> ` : '') +
+        (rep.status === 'APPROVED' ? `<button onclick=\"disapproveReport(${rep.id})\">Disapprove</button> ` : '') +
+        (rep.status === 'DISAPPROVED' ? `<button onclick=\"approveReport(${rep.id})\">Approve</button> ` : '') +
+        `<button onclick=\"deleteReport(${rep.id})\">Delete</button></td></tr>`;
+    });
   });
-  // Fill log table with checkboxes
-  const tbody = document.querySelector('#report-log tbody');
-  tbody.innerHTML = '';
-  reports.forEach(rep => {
-    let submitter = rep.submitted_by || 'Unknown';
-    if(submitter.startsWith('ANON:')) { submitter = 'Anonymous'; }
-    tbody.innerHTML += `<tr>
-      <td><input type="checkbox" class="row-select" data-id="${rep.id}"></td>
-      <td>${rep.id}</td>
-      <td>${rep.crime_type}</td>
-      <td>${rep.crime_time}</td>
-      <td>${rep.address || ''}</td>
-      <td>${submitter}</td>
-      <td>${rep.status}</td>
-      <td>` +
-      (rep.status === 'PENDING' ? `<button onclick="approveReport(${rep.id})">Approve</button> ` : '') +
-      (rep.status === 'APPROVED' ? `<button onclick="disapproveReport(${rep.id})">Disapprove</button> ` : '') +
-      (rep.status === 'DISAPPROVED' ? `<button onclick="approveReport(${rep.id})">Approve</button> ` : '') +
-      `<button onclick="deleteReport(${rep.id})">Delete</button></td></tr>`;
-  });
-});
+}
+loadAdminReports();
 
 // Bulk actions UI
 const selectAll = document.getElementById('select-all');
@@ -203,42 +672,35 @@ applyBulk.addEventListener('click', ()=>{
   const ids = Array.from(document.querySelectorAll('.row-select:checked')).map(cb => parseInt(cb.getAttribute('data-id'),10)).filter(n=>!isNaN(n));
   if(ids.length === 0){ alert('Select at least one row.'); return; }
   fetch('/admin/bulk_action', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action, ids }) })
-    .then(r=> r.json()).then(res=>{ if(res.success){ location.reload(); } else { alert(res.error || 'Bulk action failed'); } });
+    .then(r=> r.json()).then(res=>{ if(res.success){ loadAdminReports(); loadAdminStats(); } else { alert(res.error || 'Bulk action failed'); } });
 });
 
-// Approve single
+// Approve/disapprove/delete single
 function approveReport(id) {
-  fetch(`/admin_approve/${id}`, {method: 'POST'}).then(r => r.json()).then(res => {
-    if (res.success) location.reload();
-    else alert('Failed to approve.');
-  });
+  fetch(`/admin_approve/${id}`, {method: 'POST'}).then(r => r.json()).then(res => { if (res.success) { loadAdminReports(); loadAdminStats(); } else alert('Failed to approve.'); });
 }
-// Disapprove single
 function disapproveReport(id) {
-  fetch(`/admin_disapprove/${id}`, {method: 'POST'}).then(r => r.json()).then(res => {
-    if (res.success) location.reload();
-    else alert('Failed to disapprove.');
-  });
+  fetch(`/admin_disapprove/${id}`, {method: 'POST'}).then(r => r.json()).then(res => { if (res.success) { loadAdminReports(); loadAdminStats(); } else alert('Failed to disapprove.'); });
 }
-// Delete single
 function deleteReport(id) {
   if (!confirm('Are you sure you want to delete this report?')) return;
-  fetch(`/admin_delete/${id}`, {method: 'POST'}).then(r => r.json()).then(res => {
-    if (res.success) location.reload();
-    else alert('Failed to delete.');
-  });
+  fetch(`/admin_delete/${id}`, {method: 'POST'}).then(r => r.json()).then(res => { if (res.success) { loadAdminReports(); loadAdminStats(); } else alert('Failed to delete.'); });
 }
 
-// Address search and map click (no submit form here)
+// Address search + click to set form
 map.on('click', function(e) {
   let lat = e.latlng.lat, lng = e.latlng.lng;
   if (!inQld(lat, lng)) {
     document.getElementById('map-error').style.display = 'block';
     document.getElementById('clicked-address').textContent = '';
+    document.getElementById('lat').value = '';
+    document.getElementById('lng').value = '';
     if (marker) { map.removeLayer(marker); marker = null; }
     return;
   }
   document.getElementById('map-error').style.display = 'none';
+  document.getElementById('lat').value = lat;
+  document.getElementById('lng').value = lng;
   if (marker) { marker.setLatLng([lat, lng]); }
   else { marker = L.marker([lat, lng]).addTo(map); }
   fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
@@ -246,6 +708,7 @@ map.on('click', function(e) {
     .then(data => {
       clickedAddress = data.display_name || '';
       document.getElementById('clicked-address').textContent = clickedAddress;
+      document.getElementById('hidden-address').value = clickedAddress;
       marker.bindPopup(clickedAddress).openPopup();
     });
 });
@@ -260,9 +723,12 @@ findBtn.onclick = function() {
         const lat = parseFloat(results[0].lat), lng = parseFloat(results[0].lon);
         if (inQld(lat, lng)) {
           map.setView([lat, lng], 14);
+          document.getElementById('lat').value = lat;
+          document.getElementById('lng').value = lng;
           if (marker) { marker.setLatLng([lat, lng]); }
           else { marker = L.marker([lat, lng]).addTo(map); }
           document.getElementById('clicked-address').textContent = results[0].display_name;
+          document.getElementById('hidden-address').value = results[0].display_name;
           marker.bindPopup(results[0].display_name).openPopup();
         } else {
           alert('Address is outside Queensland.');
@@ -273,55 +739,152 @@ findBtn.onclick = function() {
     });
 };
 
-// Load user stats
-function loadUserStats(){
-  fetch('/api/user_stats')
-    .then(r=> r.ok ? r.json() : {})
-    .then(data=>{
-      if(data && data.username){
-        document.getElementById('stat-total').textContent = data.total_crimes;
-        document.getElementById('stat-pending').textContent = data.pending;
-        document.getElementById('stat-approved').textContent = data.approved;
+// Comment visibility
+const crimeTypeSel = document.getElementById('crime_type');
+const commentRow = document.getElementById('comment-row');
+const commentInput = document.getElementById('comment');
+function updateCommentVisibility(){ commentRow.style.display = (crimeTypeSel.value === 'Other/Unsure') ? 'block' : 'none'; }
+crimeTypeSel.addEventListener('change', updateCommentVisibility);
+updateCommentVisibility();
+
+// Set max date/time to now
+const crimeTimeInput = document.getElementById('crime_time');
+function setMaxDateTime(){
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  const maxDateTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+  crimeTimeInput.setAttribute('max', maxDateTime);
+}
+setMaxDateTime();
+setInterval(setMaxDateTime, 60000);
+
+// AJAX submit for admin form (no page refresh)
+document.getElementById('crime-form').addEventListener('submit', function(e){
+  e.preventDefault();
+  const payload = {
+    crime_type: document.getElementById('crime_type').value,
+    crime_time: document.getElementById('crime_time').value,
+    lat: parseFloat(document.getElementById('lat').value),
+    lng: parseFloat(document.getElementById('lng').value),
+    address: document.getElementById('hidden-address').value,
+    comment: (commentInput.value||'').trim(),
+    admin_submit: 'true'
+  };
+  fetch('/api/submit_crime', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+    .then(r=> r.json())
+    .then(res=>{
+      if(res && res.success){
+        document.getElementById('submit-msg').style.display = 'block';
+        setTimeout(()=>{ document.getElementById('submit-msg').style.display = 'none'; }, 1500);
+        loadAdminReports();
+        loadAdminStats();
+      } else {
+        alert(res.error || 'Submit failed');
       }
     })
-    .catch(err=> console.error('Failed to load user stats:', err));
-}
-loadUserStats();
+    .catch(e=> alert('Submit failed'));
+});
 
-// ================== ERROR HANDLING & BUG REPORT ==================
-function showErrorModal(){
-  document.getElementById('error-modal').style.display = 'flex';
+// File count indicator
+const csvFileInput = document.getElementById('csv-file-input');
+const fileCountDisplay = document.getElementById('file-count');
+if(csvFileInput && fileCountDisplay){
+  csvFileInput.addEventListener('change', function(){
+    const count = this.files.length;
+    fileCountDisplay.textContent = count > 0 ? `${count} file${count !== 1 ? 's' : ''} selected` : '';
+  });
 }
 
-function hideErrorModal(){
-  document.getElementById('error-modal').style.display = 'none';
-}
-
-// Bug report button
+// Bug modal
+function showErrorModal(){ document.getElementById('error-modal').style.display = 'flex'; }
+function hideErrorModal(){ document.getElementById('error-modal').style.display = 'none'; }
 document.getElementById('bug-report-btn').addEventListener('click', showErrorModal);
-
-// Close error modal
 document.getElementById('close-error-modal').addEventListener('click', hideErrorModal);
 
-// Close modal when clicking outside
-document.getElementById('error-modal').addEventListener('click', function(e){
-  if(e.target === this){
-    hideErrorModal();
-  }
+// ================== SOUND EFFECTS ==================
+const adminSounds = {
+    click: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(900, ctx.currentTime);
+        osc.frequency.setValueAtTime(700, ctx.currentTime + 0.05);
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.1);
+    },
+    hover: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(450, ctx.currentTime);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.05);
+    },
+    success: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(523.25, ctx.currentTime);
+        osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.08);
+        osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.16);
+        gain.gain.setValueAtTime(0.25, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.25);
+    },
+    mapClick: () => {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(650, ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.08);
+    }
+};
+
+// Add sounds to all buttons
+document.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => adminSounds.click());
+    btn.addEventListener('mouseenter', () => adminSounds.hover());
 });
 
-// Global error handler - catches all unhandled errors
-window.addEventListener('error', function(event){
-  console.error('Global error caught:', event.error);
-  showErrorModal();
-  return false;
+// Add sound to map clicks
+map.on('click', () => adminSounds.mapClick());
+
+// Add success sound to form submissions
+document.querySelectorAll('form').forEach(form => {
+    form.addEventListener('submit', () => {
+        setTimeout(() => adminSounds.success(), 100);
+    });
 });
 
-// Catch unhandled promise rejections
-window.addEventListener('unhandledrejection', function(event){
-  console.error('Unhandled promise rejection:', event.reason);
-  showErrorModal();
-  event.preventDefault();
+// Add sound to checkboxes
+document.querySelectorAll('input[type="checkbox"]').forEach(cb => {
+    cb.addEventListener('change', () => adminSounds.click());
 });
+
+// Add sound to select dropdowns
+document.querySelectorAll('select').forEach(sel => {
+    sel.addEventListener('change', () => adminSounds.click());
+});
+
 </script>
 {% endblock %}
