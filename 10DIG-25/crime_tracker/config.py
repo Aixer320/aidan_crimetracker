@@ -63,6 +63,10 @@ MAX_COMMENT_LENGTH = 100
 COMMENT_WORD_LIMIT_OTHER_UNSURE = 10
 DEFAULT_DATE_RANGE_DAYS = 30
 
+# Display overrides
+TOTAL_OFFENCES_OVERRIDE = 157729  # Fixed total offences display value requested by user
+# Set to None or 0 to disable override and use dynamic counts in frontend
+
 # Database table names
 TABLE_REPORTS = 'reports'
 TABLE_ADMINS = 'admins'
@@ -75,4 +79,3 @@ SETTING_LAST_UPDATED = 'last_updated'
 # Server config
 DEBUG = os.environ.get('FLASK_ENV') == 'development'
 PORT = int(os.environ.get('PORT', 1009))
-

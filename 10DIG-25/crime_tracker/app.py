@@ -21,6 +21,31 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Simplification helpers (non-intrusive)
+# ----------------------------------------------------------------------------
+def _is_admin():
+    return bool(session.get('admin'))
+
+def _current_username():
+    return session.get('username', 'Unknown')
+
+def _redirect_role_home():
+    return redirect(url_for('admin_home' if _is_admin() else 'home'))
+
+def _flash_and_redirect(message, category='error'):
+    flash(message, category)
+    return _redirect_role_home()
+
+def _validate_other_unsure_comment(crime_type: str, comment: str):
+    if crime_type != 'Other/Unsure':
+        return True, ''
+    words = [w for w in (comment or '').strip().split() if w]
+    if not words:
+        return False, 'Please add a short comment (<= 10 words) for Other/Unsure.'
+    if len(words) > config.COMMENT_WORD_LIMIT_OTHER_UNSURE:
+        return False, f'Comment too long. Maximum {config.COMMENT_WORD_LIMIT_OTHER_UNSURE} words.'
+    return True, ''
+# ----------------------------------------------------------------------------
 # ============================================================================
 # UTILITY FUNCTIONS (from utils.py)
 # ============================================================================
@@ -578,96 +603,39 @@ def home():
 
 @app.route('/submit_crime', methods=['POST'])
 def submit_crime():
-    lat_str = request.form.get('lat', '')
-    lng_str = request.form.get('lng', '')
-    address = request.form.get('address', '')
-    crime_type = request.form.get('crime_type', '')
-    crime_time = request.form.get('crime_time', '')
+    # Extract & normalize
+    lat = parse_coordinate(request.form.get('lat'))
+    lng = parse_coordinate(request.form.get('lng'))
+    crime_type = (request.form.get('crime_type') or '').strip()
+    crime_time = (request.form.get('crime_time') or '').strip()
+    address = (request.form.get('address') or '').strip()
     comment = (request.form.get('comment') or '').strip()
-    anonymous = request.form.get('anonymous')
-
-    # Parse coordinates
-    lat = parse_coordinate(lat_str)
-    lng = parse_coordinate(lng_str)
-
-    # Validate coordinates are present
-    if lat is None or lng is None:
-        flash('Invalid location.', 'error')
-        # Redirect admins back to admin_home, users to home
-        if session.get('admin'):
-            return redirect(url_for('admin_home'))
-        return redirect(url_for('home'))
-
-    # Validate coordinates are in Queensland
-    if not validate_qld_coordinates(lat, lng):
-        flash('Only locations in Queensland are supported.', 'error')
-        if session.get('admin'):
-            return redirect(url_for('admin_home'))
-        return redirect(url_for('home'))
-
-    # Validate required fields
-    if not crime_type or not crime_time:
-        flash('Please fill in all required fields.', 'error')
-        if session.get('admin'):
-            return redirect(url_for('admin_home'))
-        return redirect(url_for('home'))
-
-    # Validate crime type is in whitelist
-    if not validate_crime_type(crime_type):
-        flash('Invalid crime type selected.', 'error')
-        if session.get('admin'):
-            return redirect(url_for('admin_home'))
-        return redirect(url_for('home'))
-
-    # Validate comment if "Other/Unsure"
-    if crime_type == 'Other/Unsure':
-        if not comment:
-            flash('Please add a short comment (<= 10 words) for Other/Unsure.', 'error')
-            if session.get('admin'):
-                return redirect(url_for('admin_home'))
-            return redirect(url_for('home'))
-        is_valid, error_msg = validate_comment(comment, config.COMMENT_WORD_LIMIT_OTHER_UNSURE)
-        if not is_valid:
-            flash(error_msg, 'error')
-            if session.get('admin'):
-                return redirect(url_for('admin_home'))
-            return redirect(url_for('home'))
-
-    # Determine submitter - use ANON: prefix to track anonymity while preserving username for stats
-    actual_username = session.get('username', 'Unknown')
-    submitter = f"ANON:{actual_username}" if anonymous else actual_username
-
-    # Check if admin is submitting - if so, auto-approve
-    is_admin = session.get('admin', False)
+    anonymous = bool(request.form.get('anonymous'))
     admin_submit = request.form.get('admin_submit') == 'true'
-    status = config.STATUS_APPROVED if (is_admin and admin_submit) else config.STATUS_PENDING
 
-    # Insert report into database
-    success = insert_report(
-        crime_type=crime_type,
-        crime_time=crime_time,
-        lat=lat,
-        lng=lng,
-        address=address,
-        submitted_by=submitter,
-        status=status,
-        comment=comment
-    )
+    # Coordinate validation
+    if lat is None or lng is None:
+        return _flash_and_redirect('Invalid location.')
+    if not validate_qld_coordinates(lat, lng):
+        return _flash_and_redirect('Only locations in Queensland are supported.')
 
-    if success:
-        if status == config.STATUS_APPROVED:
-            flash('Crime report submitted and auto-approved!')
-        else:
-            flash('Crime report submitted! Pending admin approval.')
-        # Redirect admins to admin_home, users to home
-        if is_admin:
-            return redirect(url_for('admin_home'))
-        return redirect(url_for('home'))
-    else:
-        flash('Failed to submit crime report. Please try again.', 'error')
-        if is_admin:
-            return redirect(url_for('admin_home'))
-        return redirect(url_for('home'))
+    # Field validation
+    if not crime_type or not crime_time:
+        return _flash_and_redirect('Please fill in all required fields.')
+    if not validate_crime_type(crime_type):
+        return _flash_and_redirect('Invalid crime type selected.')
+
+    ok_comment, msg_comment = _validate_other_unsure_comment(crime_type, comment)
+    if not ok_comment:
+        return _flash_and_redirect(msg_comment)
+
+    submitter = f"ANON:{_current_username()}" if anonymous else _current_username()
+    status = config.STATUS_APPROVED if (_is_admin() and admin_submit) else config.STATUS_PENDING
+
+    if insert_report(crime_type, crime_time, lat, lng, address, submitter, status, comment):
+        flash('Crime report submitted and auto-approved!' if status == config.STATUS_APPROVED else 'Crime report submitted! Pending admin approval.')
+        return _redirect_role_home()
+    return _flash_and_redirect('Failed to submit crime report. Please try again.')
 
 @app.route('/api/reports')
 def api_reports():
@@ -777,34 +745,29 @@ def admin_bulk_action():
 # CSV import to update real crimes JSON
 @app.route('/admin/import_csv', methods=['POST'])
 def admin_import_csv():
-    if not session.get('admin'):
+    if not _is_admin():
         flash('Admin login required.', 'error')
         return redirect(url_for('index'))
 
-    # Support both single file (csv_file) and multiple files (csv_files)
     files = request.files.getlist('csv_files')
-    if not files or len(files) == 0:
-        # Fallback to single file for backwards compatibility
+    if not files:
         single_file = request.files.get('csv_file')
         if single_file and single_file.filename:
             files = [single_file]
-        else:
-            flash('Please choose at least one CSV file to import.', 'error')
-            return redirect(url_for('admin_home'))
+    if not files:
+        flash('Please choose at least one CSV file to import.', 'error')
+        return redirect(url_for('admin_home'))
 
-    # Validate file size (50MB limit per file)
-    MAX_CSV_SIZE_BYTES = 50 * 1024 * 1024
+    MAX_CSV_SIZE_BYTES = config.MAX_CSV_SIZE_MB * 1024 * 1024
 
-    # Validate all files first
     for f in files:
         if not f or not f.filename:
             continue
         if f.content_length and f.content_length > MAX_CSV_SIZE_BYTES:
-            flash(f'File "{f.filename}" too large. Maximum {MAX_CSV_SIZE_BYTES / (1024*1024):.0f}MB allowed per file.', 'error')
+            flash(f'File "{f.filename}" too large. Maximum {config.MAX_CSV_SIZE_MB}MB allowed per file.', 'error')
             return redirect(url_for('admin_home'))
 
     try:
-        # Load existing data once
         os.makedirs(config.STATIC_DIR, exist_ok=True)
         existing = []
         if os.path.exists(config.JSON_OUTPUT_PATH):
@@ -814,160 +777,69 @@ def admin_import_csv():
             except Exception:
                 existing = []
 
-        # Try to load the update_real_crimes module for postcode generation
-        try:
-            import update_real_crimes as updater
-            try:
-                updater._load_poa_bounds()
-            except Exception:
-                pass
-            try:
-                updater._load_suburb_bounds()
-            except Exception:
-                pass
-        except Exception:
-            updater = None
-
-        # Aggregate stats across all files
-        total_imported = 0
-        total_duplicates = 0
-        total_empty = 0
-        processed_files = 0
+        total_imported = total_duplicates = total_empty = processed_files = 0
         failed_files = []
 
-        # Process each CSV file
         for f in files:
             if not f or not f.filename:
                 continue
-
             try:
                 content = f.stream.read().decode('utf-8', errors='ignore')
-
-                # Additional safety check on actual content size
                 if len(content) > MAX_CSV_SIZE_BYTES:
                     failed_files.append(f"{f.filename}: Content too large")
                     continue
-
                 reader = csv.DictReader(content.splitlines())
-
-                # Process CSV rows - pass current merged data as "existing"
-                stats = _process_csv_rows(reader, existing, updater)
-
-                # Update existing data with merged results for next file
+                stats = _process_csv_rows(reader, existing)  # removed updater_module arg
                 existing = stats['merged']
-
-                # Aggregate stats
                 total_imported += stats['imported']
                 total_duplicates += stats['duplicates']
                 total_empty += stats['empty']
                 processed_files += 1
-
-                logger.info(
-                    f"Processed file '{f.filename}': "
-                    f"{stats['imported']} new, {stats['duplicates']} duplicates, {stats['empty']} empty"
-                )
-
             except Exception as e:
-                failed_files.append(f"{f.filename}: {str(e)}")
-                logger.error(f"Error processing file '{f.filename}': {str(e)}")
+                failed_files.append(f"{f.filename}: {e}")
                 continue
 
-        # Save merged data from all files
         with open(config.JSON_OUTPUT_PATH, 'w', encoding='utf-8') as jf:
             json.dump(existing, jf, ensure_ascii=False)
-
-        # Update last_updated timestamp
         today = date.today().isoformat()
         set_setting(config.SETTING_LAST_UPDATED, today)
 
-        logger.info(
-            f"Batch CSV import completed by {session.get('username')}: "
-            f"{processed_files} files processed, {total_imported} new, "
-            f"{total_duplicates} duplicates, {total_empty} empty"
-        )
-
-        # Build success message
-        success_msg = (
-            f"Batch import complete: {processed_files} file(s) processed, "
-            f"{total_imported} new records, {total_duplicates} duplicates skipped, "
-            f"{total_empty} empty rows skipped. Last updated: {today}"
-        )
-
+        success_msg = (f"Batch import complete: {processed_files} file(s) processed, "
+                       f"{total_imported} new records, {total_duplicates} duplicates skipped, "
+                       f"{total_empty} empty rows skipped. Last updated: {today}")
         if failed_files:
             success_msg += f" | Failed files: {', '.join(failed_files)}"
             flash(success_msg, 'warning')
         else:
             flash(success_msg, 'success')
-
-    except ValueError as e:
-        logger.error(f"CSV parsing error during batch import by {session.get('username')}: {str(e)}")
-        flash(f'CSV parsing error: {str(e)}', 'error')
-    except IOError as e:
-        logger.error(f"File I/O error during batch CSV import by {session.get('username')}: {str(e)}")
-        flash(f'File I/O error: {str(e)}', 'error')
     except Exception as e:
-        logger.error(f"Unexpected error during batch CSV import by {session.get('username')}: {str(e)}")
-        flash(f'Batch import failed: {str(e)}', 'error')
+        flash(f'Batch import failed: {e}', 'error')
 
     return redirect(url_for('admin_home'))
 
 
-def _process_csv_rows(reader, existing_data, updater_module):
-    """
-    Process CSV rows, detect duplicates, and merge with existing data.
-    Returns stats dict with import counts.
-
-    Only skips records that already exist in existing_data.
-    Allows duplicates within the CSV itself to be imported.
-    """
+def _process_csv_rows(reader, existing_data):  # removed updater_module
+    """Process CSV rows and merge with existing data (strict duplicate rule)."""
     def _pick_field(row, *field_names):
-        """Pick first non-empty field from row."""
         for name in field_names:
             if name in row and row[name]:
                 return str(row[name]).strip()
         return ''
 
     def _build_signature(rec):
-        """Build canonical signature for duplicate detection.
-        Tries: crime_type + iso_date + postcode
-        Fallback: crime_type + iso_date + suburb (if postcode missing)
-        Returns None if any required core field is missing."""
         ctype = normalize_text(rec.get('crime_type', ''))
-        # Prefer iso_date (parsed), but fall back to normalized crime_time
-        ctime = rec.get('iso_date') or normalize_text(rec.get('crime_time', ''))
+        iso_date = rec.get('iso_date')
         postcode = normalize_text(rec.get('postcode', ''))
-        suburb = normalize_text(rec.get('suburb', ''))
-
-        # Must have crime type and some form of date
-        if not ctype or not ctime:
+        if not (ctype and iso_date and postcode):
             return None
+        return f"{ctype}|{iso_date}|{postcode}"
 
-        # Prefer postcode, fall back to suburb
-        location = postcode or suburb
-
-        # Must have location info
-        if not location:
-            return None
-
-        return f"{ctype}|{ctime}|{location}"
-
-    # Build signature set ONLY from existing data in JSON (don't track CSV rows)
-    existing_sigs = set()
-    for existing_rec in existing_data:
-        sig = _build_signature(existing_rec)
-        if sig:
-            existing_sigs.add(sig)
-
-    logger.info(f"Loaded {len(existing_data)} existing records, {len(existing_sigs)} unique signatures to check against")
-
+    existing_sigs = {s for s in (_build_signature(r) for r in existing_data) if s}
     merged = list(existing_data)
-    imported = 0
-    duplicates = 0
-    empty = 0
-    sample_dupes = []  # Track first few duplicates for logging
+    imported = duplicates = empty = 0
+    sample_dupes = []
 
     for row in reader:
-        # Extract fields with fallback names
         lat_str = _pick_field(row, 'lat', 'latitude', 'Lat', 'Latitude', 'LAT', 'y', 'Y')
         lng_str = _pick_field(row, 'lng', 'lon', 'long', 'longitude', 'Longitude', 'LNG', 'x', 'X')
         crime_type = _pick_field(row, 'crime_type', 'Type', 'Offence', 'Offence Type', 'offence', 'category') or 'Crime'
@@ -976,19 +848,14 @@ def _process_csv_rows(reader, existing_data, updater_module):
         suburb = _pick_field(row, 'suburb', 'Suburb', 'Area of Interest', 'locality', 'area')
         postcode = _pick_field(row, 'postcode', 'Postcode', 'Post Code', 'pcode', 'PCODE')
 
-        # Parse coordinates
         lat = parse_coordinate(lat_str)
         lng = parse_coordinate(lng_str)
 
-        # Handle postcode as suburb if present
-        if not postcode and suburb and suburb.isdigit() and len(suburb) == 4:
-            postcode = suburb
-            suburb = ''
+        if not postcode and suburb.isdigit() and len(suburb) == 4:
+            postcode, suburb = suburb, ''
 
-        # Parse date to ISO format
         iso_date = parse_date(crime_time)
 
-        # Build record
         rec = {
             'lat': lat,
             'lng': lng,
@@ -1000,28 +867,20 @@ def _process_csv_rows(reader, existing_data, updater_module):
             'postcode': postcode,
         }
 
-        # Skip if no useful fields
         if not any([rec['lat'], rec['lng'], rec['crime_type'], rec['crime_time'], rec['address'], rec['suburb'], rec['postcode']]):
             empty += 1
             continue
 
-        # Check for duplicates ONLY against existing data
         sig = _build_signature(rec)
         if sig and sig in existing_sigs:
             duplicates += 1
             if len(sample_dupes) < 3:
-                sample_dupes.append({
-                    'crime_type': rec.get('crime_type'),
-                    'crime_time': rec.get('crime_time'),
-                    'iso_date': rec.get('iso_date'),
-                    'postcode': rec.get('postcode'),
-                    'suburb': rec.get('suburb'),
-                    'signature': sig
-                })
+                sample_dupes.append({'signature': sig, 'crime_type': rec['crime_type'], 'iso_date': rec['iso_date'], 'postcode': rec['postcode']})
             continue
 
-        # Always add to merged (even if it's a duplicate within the CSV itself)
         merged.append(rec)
+        if sig:
+            existing_sigs.add(sig)
         imported += 1
 
     return {
