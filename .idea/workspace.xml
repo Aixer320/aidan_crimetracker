@@ -4,12 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="58f3505c-ca22-41c9-b24f-03da0f2e5711" name="Changes" comment="test message">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+    <list default="true" id="58f3505c-ca22-41c9-b24f-03da0f2e5711" name="Changes" comment="cleaning up files">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/10DIG-25/crime_tracker/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/app.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/10DIG-25/crime_tracker/config.py" beforeDir="false" afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/config.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/home.html" beforeDir="false" afterPath="$PROJECT_DIR$/10DIG-25/crime_tracker/templates/home.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -304,7 +300,7 @@
       <workItem from="1763514569874" duration="4462000" />
       <workItem from="1763519086265" duration="41000" />
       <workItem from="1763519152757" duration="630000" />
-      <workItem from="1763519856474" duration="726000" />
+      <workItem from="1763519856474" duration="6066000" />
     </task>
     <task id="LOCAL-00001" summary="Hopefully this works">
       <option name="closed" value="true" />
@@ -338,7 +334,15 @@
       <option name="project" value="LOCAL" />
       <updated>1763185782451</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="cleaning up files">
+      <option name="closed" value="true" />
+      <created>1763521040711</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1763521040711</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -364,7 +368,8 @@
     <MESSAGE value="Hopefully this works" />
     <MESSAGE value="do I have to type this com" />
     <MESSAGE value="test message" />
-    <option name="LAST_COMMIT_MESSAGE" value="test message" />
+    <MESSAGE value="cleaning up files" />
+    <option name="LAST_COMMIT_MESSAGE" value="cleaning up files" />
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/PythonProject$app.coverage" NAME="app Coverage Results" MODIFIED="1763078842781" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/crime_tracker" />
@@ -372,7 +377,7 @@
     <SUITE FILE_PATH="coverage/PythonProject$update_real_crimes.coverage" NAME="update_real_crimes Coverage Results" MODIFIED="1759812071803" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/crime_tracker" />
     <SUITE FILE_PATH="coverage/PythonProject$age_calc.coverage" NAME="age_calc Coverage Results" MODIFIED="1749699666594" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25" />
     <SUITE FILE_PATH="coverage/PythonProject$app__2_.coverage" NAME="app (2) Coverage Results" MODIFIED="1754360740173" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/flask_logina" />
-    <SUITE FILE_PATH="coverage/PycharmProjects$app.coverage" NAME="app Coverage Results" MODIFIED="1763520153023" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/crime_tracker" />
+    <SUITE FILE_PATH="coverage/PycharmProjects$app.coverage" NAME="app Coverage Results" MODIFIED="1763525782910" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/crime_tracker" />
     <SUITE FILE_PATH="coverage/PythonProject$hello_world.coverage" NAME="hello_world Coverage Results" MODIFIED="1749169401772" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25" />
     <SUITE FILE_PATH="coverage/PythonProject$app__3_.coverage" NAME="app (3) Coverage Results" MODIFIED="1756183836994" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/10DIG-25/athletics_nom" />
   </component>
